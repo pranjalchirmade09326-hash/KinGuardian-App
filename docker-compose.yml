@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kinguardian-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kinguardian
+      POSTGRES_PASSWORD: kinguardian_secret_pw
+      POSTGRES_DB: kinguardian_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/src/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kinguardian -d kinguardian_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kinguardian-net
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: kinguardian-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: "4000"
+      NODE_ENV: production
+      DATABASE_URL: postgresql://kinguardian:kinguardian_secret_pw@postgres:5432/kinguardian_db
+      CORS_ORIGIN: "*"
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - kinguardian-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  kinguardian-net:
+    driver: bridge
