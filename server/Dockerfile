@@ -1,68 +1,47 @@
 # ==============================================================================
-# KinGuardian Backend Service Dockerfile
+# KinGuardian Backend Service Dockerfile (Python / FastAPI)
 # Multi-stage build for optimal production image size and security
-# Base: Node.js 20 Alpine Linux
+# Base: Python 3.12 Slim
 # ==============================================================================
 
-# ------------------------------------------------------------------------------
-# Stage 1: Build & Compile TypeScript
-# ------------------------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Install build dependencies
-COPY package*.json ./
-RUN npm ci
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Copy TypeScript configuration and source tree
-COPY tsconfig.json ./
-COPY src/ ./src/
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Compile TypeScript to JavaScript in dist/
-RUN npm run build
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # ------------------------------------------------------------------------------
 # Stage 2: Production Runner
 # ------------------------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM python:3.12-slim AS runner
 
 LABEL maintainer="KinGuardian Team"
-LABEL description="KinGuardian Backend Service (Node.js & TypeScript)"
+LABEL description="KinGuardian Backend Service (Python & FastAPI)"
 
-# Define environment variables
-ENV NODE_ENV=production \
-    PORT=4000
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    NODE_ENV=production \
+    PORT=4000 \
+    PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
-# Install tsx globally to ensure `npm run migrate` runs seamlessly in container
-RUN npm install -g tsx
+RUN groupadd --system appuser && useradd --system --gid appuser appuser
 
-# Install production-only dependencies
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser whatsapp_webhook_server.py ./
 
-# Copy compiled JavaScript output from builder stage
-COPY --chown=node:node --from=builder /app/dist ./dist
+USER appuser
 
-# Copy configuration, migrations and database scripts for runtime migration execution
-COPY --chown=node:node src/config ./src/config
-COPY --chown=node:node src/db ./src/db
-COPY --chown=node:node --from=builder /app/src/db/migrations ./dist/db/migrations
-
-# Ensure all files in working directory are owned by unprivileged node user
-RUN chown -R node:node /app
-
-# Switch to unprivileged non-root user for container security
-USER node
-
-# Expose backend API port
 EXPOSE 4000
 
-# Native container healthcheck probe
-HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:4000/health || exit 1
-
-# Default runtime entrypoint
-CMD ["node", "dist/index.js"]
+CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "4000"]

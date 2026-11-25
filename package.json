@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web --port 3000",
-    "server:whatsapp": "node --experimental-strip-types server/whatsapp-webhook-server.ts",
+    "server:whatsapp": "python server/whatsapp_webhook_server.py",
     "test": "jest",
     "tsc": "tsc --noEmit",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx && tsc --noEmit",
