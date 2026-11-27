@@ -14,7 +14,10 @@ export default function WearablesRoute() {
   if (!context) return null;
 
   const personId = id || 'dad';
-  const parentName = personId === 'dad' ? `${context.primaryParentName} (Dad)` : `${context.secondaryParentName} (Mom)`;
+  const parentName =
+    personId === 'dad'
+      ? `${context.primaryParentName} (Dad)`
+      : `${context.secondaryParentName} (Mom)`;
 
   return (
     <DeviceFrame>

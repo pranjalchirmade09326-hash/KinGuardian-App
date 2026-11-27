@@ -134,9 +134,7 @@ export const ParentDevicesView: React.FC<ParentDevicesViewProps> = ({
           <Text className="text-base font-bold text-slate-700 dark:text-slate-300">
             No devices connected
           </Text>
-          <Text className="text-xs text-slate-500 text-center">
-            Tap below to pair your watch.
-          </Text>
+          <Text className="text-xs text-slate-500 text-center">Tap below to pair your watch.</Text>
         </View>
       )}
 
@@ -209,9 +207,7 @@ export const ParentDevicesView: React.FC<ParentDevicesViewProps> = ({
               onPress={() => setShowManageModal(false)}
               className="w-full bg-slate-900 dark:bg-slate-100 py-3.5 rounded-xl items-center"
             >
-              <Text className="text-sm font-bold text-white dark:text-slate-900">
-                Done
-              </Text>
+              <Text className="text-sm font-bold text-white dark:text-slate-900">Done</Text>
             </TouchableOpacity>
           </View>
         </View>

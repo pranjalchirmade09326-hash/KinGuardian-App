@@ -24,14 +24,15 @@ export function formatAIResponse(rawInput: any): FormattedAIResult {
 
   const defaultFollowUps = [
     "What is Dad's current blood pressure?",
-    "Did Mom take her medications today?",
-    "Check upcoming doctor appointments",
+    'Did Mom take her medications today?',
+    'Check upcoming doctor appointments',
     "How are Dad's activity and steps trending?"
   ];
 
   if (!rawInput) {
     return {
-      answer: "I'm reviewing Dad and Mom's linked health streams. How can I assist you with their care today?",
+      answer:
+        "I'm reviewing Dad and Mom's linked health streams. How can I assist you with their care today?",
       citations: defaultCitations,
       suggestedFollowUps: defaultFollowUps
     };
@@ -51,7 +52,10 @@ export function formatAIResponse(rawInput: any): FormattedAIResult {
   }
 
   // Case 3: If input looks like stringified JSON
-  if ((text.startsWith('{') && text.endsWith('}')) || (text.startsWith('[') && text.endsWith(']'))) {
+  if (
+    (text.startsWith('{') && text.endsWith('}')) ||
+    (text.startsWith('[') && text.endsWith(']'))
+  ) {
     try {
       const parsed = JSON.parse(text);
       return extractFromObject(parsed, defaultCitations, defaultFollowUps);
@@ -90,7 +94,9 @@ function extractFromObject(
 ): FormattedAIResult {
   if (Array.isArray(obj)) {
     const listAnswers = obj
-      .map((item) => (typeof item === 'object' ? extractFromObject(item, [], []).answer : String(item)))
+      .map((item) =>
+        typeof item === 'object' ? extractFromObject(item, [], []).answer : String(item)
+      )
       .filter(Boolean)
       .join('\n\n');
     return {
@@ -111,15 +117,15 @@ function extractFromObject(
     obj.summary ||
     null;
 
-  const citations = Array.isArray(obj.citations) && obj.citations.length > 0
-    ? obj.citations
-    : fallbackCitations;
+  const citations =
+    Array.isArray(obj.citations) && obj.citations.length > 0 ? obj.citations : fallbackCitations;
 
-  const suggestedFollowUps = Array.isArray(obj.suggestedFollowUps) && obj.suggestedFollowUps.length > 0
-    ? obj.suggestedFollowUps
-    : Array.isArray(obj.suggestedActions) && obj.suggestedActions.length > 0
-    ? obj.suggestedActions
-    : fallbackFollowUps;
+  const suggestedFollowUps =
+    Array.isArray(obj.suggestedFollowUps) && obj.suggestedFollowUps.length > 0
+      ? obj.suggestedFollowUps
+      : Array.isArray(obj.suggestedActions) && obj.suggestedActions.length > 0
+        ? obj.suggestedActions
+        : fallbackFollowUps;
 
   if (answer && typeof answer === 'string') {
     return {
@@ -144,32 +150,43 @@ function extractFromObject(
       .replace(/^\w/, (c) => c.toUpperCase())
       .trim();
     if (typeof value === 'object' && value !== null) {
-      readableLines.push(`• **${formattedKey}**: ${JSON.stringify(value)}`);
+      readableLines.push(`• ${formattedKey}: ${JSON.stringify(value)}`);
     } else if (value !== undefined && value !== null && value !== '') {
-      readableLines.push(`• **${formattedKey}**: ${value}`);
+      readableLines.push(`• ${formattedKey}: ${value}`);
     }
   }
 
   return {
-    answer: readableLines.length > 0
-      ? readableLines.join('\n')
-      : "Ramesh and Lakshmi's health telemetry is normal and all sensors are operating within optimal parameters.",
+    answer:
+      readableLines.length > 0
+        ? readableLines.join('\n')
+        : "Ramesh and Lakshmi's health telemetry is normal and all sensors are operating within optimal parameters.",
     citations,
     suggestedFollowUps
   };
 }
 
 /**
- * Removes accidental JSON delimiters, escaped slashes, or trailing quotes.
+ * Removes accidental JSON delimiters, escaped slashes, trailing quotes, and raw markdown symbols (** / __ / # / `).
  */
 function cleanRawJsonString(text: string): string {
   let cleaned = text.trim();
   // Strip starting/ending quotes if wrapped
-  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+  if (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
+  ) {
     cleaned = cleaned.slice(1, -1);
   }
   // Unescape newlines
   cleaned = cleaned.replace(/\\n/g, '\n').replace(/\\t/g, '  ').replace(/\\"/g, '"');
+  // Strip raw markdown bold/italic/heading/code tokens so React Native <Text> renders cleanly
+  cleaned = cleaned
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*/g, '');
   return cleaned;
 }
 
@@ -300,9 +317,14 @@ export function generateIntelligentHealthcareAnswer(
     q.includes('creatinine') ||
     q.includes('egfr')
   ) {
+    const recentLabDate = new Date(Date.now() - 12 * 86400000).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
     return {
       answer:
-        `${pName}'s most recent Comprehensive Metabolic Panel (CMP) was completed on **August 3, 2026** at Apollo Diagnostics Chennai. All vital markers are within stable clinical thresholds:\n\n` +
+        `${pName}'s most recent Comprehensive Metabolic Panel (CMP) was completed on ${recentLabDate} at Apollo Diagnostics Chennai. All vital markers are within stable clinical thresholds:\n\n` +
         `• **eGFR (Kidney Function)**: **78 mL/min/1.73m²** (Optimal)\n` +
         `• **Serum Creatinine**: **1.1 mg/dL** (Normal)\n` +
         `• **Serum Potassium**: **4.4 mmol/L** (Normal)\n` +
@@ -404,7 +426,7 @@ export function generateIntelligentHealthcareAnswer(
     ],
     suggestedFollowUps: [
       "What is Dad's blood pressure today?",
-      "Did Mom take her pills?",
+      'Did Mom take her pills?',
       "When is Dad's next appointment?",
       "Summarize Dad's latest lab test"
     ]

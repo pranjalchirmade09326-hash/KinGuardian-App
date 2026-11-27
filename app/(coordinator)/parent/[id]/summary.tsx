@@ -14,7 +14,8 @@ export default function DoctorSummaryRoute() {
   if (!context) return null;
 
   const currentBP = context.currentBP;
-  const parentName = id === 'mom' ? `${context.secondaryParentName} (Mom)` : `${context.primaryParentName} (Dad)`;
+  const parentName =
+    id === 'mom' ? `${context.secondaryParentName} (Mom)` : `${context.primaryParentName} (Dad)`;
   const rawParentName = id === 'mom' ? context.secondaryParentName : context.primaryParentName;
 
   return (

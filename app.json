@@ -8,9 +8,17 @@
     "scheme": "kinguardian",
 
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kinguardian.app"
     },
     "android": {
+      "package": "com.kinguardian.app",
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_BLOOD_PRESSURE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#2a14b4"
       }

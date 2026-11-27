@@ -36,6 +36,11 @@ def _parse_json_field(val: Any, default: Any) -> Any:
     return val
 
 
+ANJALI_USER_ID = "11111111-1111-4111-8111-111111111111"
+RAMESH_USER_ID = "22222222-2222-4222-8222-222222222222"
+DEFAULT_FAMILY_ID = "33333333-3333-4333-8333-333333333333"
+
+
 class InMemoryDb:
     """Singleton in-memory database mirroring the PostgreSQL schema."""
 
@@ -45,6 +50,8 @@ class InMemoryDb:
         self.users: dict[str, dict[str, Any]] = {}
         self.contacts: dict[str, dict[str, Any]] = {}
         self.alerts: dict[str, dict[str, Any]] = {}
+        self.families: dict[str, dict[str, Any]] = {}
+        self.seed_demo_data()
 
     @classmethod
     def get_instance(cls) -> "InMemoryDb":
@@ -52,10 +59,108 @@ class InMemoryDb:
             cls._instance = cls()
         return cls._instance
 
-    def reset(self) -> None:
+    def reset(self, seed_demo: bool = True) -> None:
         self.users.clear()
         self.contacts.clear()
         self.alerts.clear()
+        self.families.clear()
+        if seed_demo:
+            self.seed_demo_data()
+
+    def seed_demo_data(self) -> None:
+        """Idempotently seed demo users, emergency contacts, and default family."""
+        seed_ts = "2026-08-01T00:00:00+00:00"
+
+        if ANJALI_USER_ID not in self.users:
+            self.users[ANJALI_USER_ID] = {
+                "id": ANJALI_USER_ID,
+                "name": "Anjali Sharma",
+                "email": "anjali@kinguardian.com",
+                "phone": "447123456789",
+                "role": "coordinator",
+                "blood_group": None,
+                "medical_conditions": [],
+                "allergies": [],
+                "address": None,
+                "city": "London",
+                "country": "United Kingdom",
+                "timezone": "Europe/London",
+                "emergency_notes": "Primary diaspora caregiver coordinator for parents in Chennai.",
+                "avatar_url": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
+                "created_at": seed_ts,
+                "updated_at": seed_ts,
+            }
+
+        if RAMESH_USER_ID not in self.users:
+            self.users[RAMESH_USER_ID] = {
+                "id": RAMESH_USER_ID,
+                "name": "Ramesh Sharma",
+                "email": "ramesh@kinguardian.com",
+                "phone": "919270756299",
+                "role": "parent",
+                "blood_group": "B+",
+                "medical_conditions": ["Hypertension", "Type 2 Diabetes"],
+                "allergies": ["Penicillin"],
+                "address": None,
+                "city": "Chennai",
+                "country": "India",
+                "timezone": "Asia/Kolkata",
+                "emergency_notes": "Hypertension history; on Amlodipine 5mg and Atorvastatin 20mg.",
+                "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                "created_at": seed_ts,
+                "updated_at": seed_ts,
+            }
+
+        demo_contacts: list[dict[str, Any]] = [
+            {
+                "id": "10000000-0000-4000-8000-000000000001",
+                "user_id": RAMESH_USER_ID,
+                "name": "Priya",
+                "relationship": "Family Caregiver",
+                "phone": "+91 92707 56299",
+                "email": "priya.care@kinguardian.com",
+                "is_primary": True,
+                "priority": 1,
+                "created_at": seed_ts,
+                "updated_at": seed_ts,
+            },
+            {
+                "id": "10000000-0000-4000-8000-000000000002",
+                "user_id": RAMESH_USER_ID,
+                "name": "Anjali Sharma",
+                "relationship": "Daughter / Coordinator",
+                "phone": "+44 7123 456789",
+                "email": "anjali@kinguardian.com",
+                "is_primary": False,
+                "priority": 2,
+                "created_at": seed_ts,
+                "updated_at": seed_ts,
+            },
+            {
+                "id": "10000000-0000-4000-8000-000000000003",
+                "user_id": RAMESH_USER_ID,
+                "name": "Rahul Sharma",
+                "relationship": "Son (Dubai)",
+                "phone": "+971 50 123 4567",
+                "email": "rahul@kinguardian.com",
+                "is_primary": False,
+                "priority": 3,
+                "created_at": seed_ts,
+                "updated_at": seed_ts,
+            },
+        ]
+        for contact in demo_contacts:
+            if contact["id"] not in self.contacts:
+                self.contacts[contact["id"]] = contact
+
+        if DEFAULT_FAMILY_ID not in self.families:
+            self.families[DEFAULT_FAMILY_ID] = {
+                "id": DEFAULT_FAMILY_ID,
+                "name": "Sharma Family Care Circle",
+                "primary_coordinator_profile_id": ANJALI_USER_ID,
+                "created_at": seed_ts,
+                "updated_at": seed_ts,
+            }
 
     async def query(self, text: str, params: Optional[list[Any]] = None) -> QueryResult:
         params = list(params or [])
@@ -116,8 +221,11 @@ class InMemoryDb:
             return QueryResult(rows=[dict(user)], row_count=1)
 
         if trimmed.startswith("SELECT * FROM users WHERE id = %s"):
-            user = self.users.get(str(params[0]))
-            return QueryResult(rows=[dict(user)] if user else [], row_count=1 if user else 0)
+            found_user = self.users.get(str(params[0]))
+            return QueryResult(
+                rows=[dict(found_user)] if found_user else [],
+                row_count=1 if found_user else 0,
+            )
 
         if trimmed.startswith("SELECT * FROM users WHERE email = %s"):
             email = str(params[0]).lower()
@@ -154,23 +262,33 @@ class InMemoryDb:
 
         if trimmed.startswith("UPDATE users"):
             uid = str(params[-1])
-            user = self.users.get(uid)
-            if not user:
+            existing_user = self.users.get(uid)
+            if not existing_user:
                 return QueryResult(rows=[], row_count=0)
 
             set_match = re.search(r"SET\s+(.*?)\s+WHERE", trimmed, re.DOTALL | re.IGNORECASE)
             if set_match:
                 assignments = [a.strip() for a in set_match.group(1).split(",")]
+                pending_updates: dict[str, Any] = {}
                 for i, assignment in enumerate(assignments):
                     field_name = assignment.split("=")[0].strip()
                     val = params[i]
+                    if field_name == "email" and val is not None:
+                        target_email = str(val).lower()
+                        for other_id, other_user in self.users.items():
+                            if other_id != uid and other_user["email"].lower() == target_email:
+                                raise DatabaseError(
+                                    'duplicate key value violates unique constraint "users_email_key"',
+                                    code="23505",
+                                )
                     if field_name in ("medical_conditions", "allergies"):
-                        user[field_name] = _parse_json_field(val, [])
-                    elif field_name in user:
-                        user[field_name] = val
-            user["updated_at"] = _now_iso()
-            self.users[uid] = user
-            return QueryResult(rows=[dict(user)], row_count=1)
+                        pending_updates[field_name] = _parse_json_field(val, [])
+                    elif field_name in existing_user:
+                        pending_updates[field_name] = val
+                existing_user.update(pending_updates)
+            existing_user["updated_at"] = _now_iso()
+            self.users[uid] = existing_user
+            return QueryResult(rows=[dict(existing_user)], row_count=1)
 
         if trimmed.startswith("DELETE FROM users WHERE id = %s"):
             uid = str(params[0])
@@ -216,8 +334,11 @@ class InMemoryDb:
             return QueryResult(rows=[dict(contact)], row_count=1)
 
         if trimmed.startswith("SELECT * FROM emergency_contacts WHERE id = %s"):
-            contact = self.contacts.get(str(params[0]))
-            return QueryResult(rows=[dict(contact)] if contact else [], row_count=1 if contact else 0)
+            found_contact = self.contacts.get(str(params[0]))
+            return QueryResult(
+                rows=[dict(found_contact)] if found_contact else [],
+                row_count=1 if found_contact else 0,
+            )
 
         if "SELECT * FROM emergency_contacts" in trimmed and "WHERE user_id = %s" in trimmed:
             user_id = str(params[0])
@@ -229,8 +350,8 @@ class InMemoryDb:
 
         if trimmed.startswith("UPDATE emergency_contacts"):
             cid = str(params[-1])
-            contact = self.contacts.get(cid)
-            if not contact:
+            existing_contact = self.contacts.get(cid)
+            if not existing_contact:
                 return QueryResult(rows=[], row_count=0)
 
             set_match = re.search(r"SET\s+(.*?)\s+WHERE", trimmed, re.DOTALL | re.IGNORECASE)
@@ -240,14 +361,14 @@ class InMemoryDb:
                     field_name = assignment.split("=")[0].strip()
                     val = params[i]
                     if field_name == "is_primary":
-                        contact["is_primary"] = bool(val)
+                        existing_contact["is_primary"] = bool(val)
                     elif field_name == "priority":
-                        contact["priority"] = int(val)
-                    elif field_name in contact:
-                        contact[field_name] = val
-            contact["updated_at"] = _now_iso()
-            self.contacts[cid] = contact
-            return QueryResult(rows=[dict(contact)], row_count=1)
+                        existing_contact["priority"] = int(val)
+                    elif field_name in existing_contact:
+                        existing_contact[field_name] = val
+            existing_contact["updated_at"] = _now_iso()
+            self.contacts[cid] = existing_contact
+            return QueryResult(rows=[dict(existing_contact)], row_count=1)
 
         if trimmed.startswith("DELETE FROM emergency_contacts WHERE id = %s"):
             cid = str(params[0])
@@ -294,8 +415,11 @@ class InMemoryDb:
             return QueryResult(rows=[dict(alert)], row_count=1)
 
         if trimmed.startswith("SELECT * FROM alerts WHERE id = %s"):
-            alert = self.alerts.get(str(params[0]))
-            return QueryResult(rows=[dict(alert)] if alert else [], row_count=1 if alert else 0)
+            found_alert = self.alerts.get(str(params[0]))
+            return QueryResult(
+                rows=[dict(found_alert)] if found_alert else [],
+                row_count=1 if found_alert else 0,
+            )
 
         if "SELECT COUNT(*) AS total FROM alerts" in trimmed:
             matching = list(self.alerts.values())
@@ -341,30 +465,30 @@ class InMemoryDb:
         if "status = 'acknowledged'" in trimmed:
             by = params[0]
             aid = str(params[1])
-            alert = self.alerts.get(aid)
-            if not alert:
+            ack_alert = self.alerts.get(aid)
+            if not ack_alert:
                 return QueryResult(rows=[], row_count=0)
             now = _now_iso()
-            alert["status"] = "acknowledged"
-            alert["acknowledged_at"] = now
-            alert["acknowledged_by"] = by
-            alert["updated_at"] = now
-            self.alerts[aid] = alert
-            return QueryResult(rows=[dict(alert)], row_count=1)
+            ack_alert["status"] = "acknowledged"
+            ack_alert["acknowledged_at"] = now
+            ack_alert["acknowledged_by"] = by
+            ack_alert["updated_at"] = now
+            self.alerts[aid] = ack_alert
+            return QueryResult(rows=[dict(ack_alert)], row_count=1)
 
         if "status = 'resolved'" in trimmed:
             notes = params[0]
             aid = str(params[1])
-            alert = self.alerts.get(aid)
-            if not alert:
+            res_alert = self.alerts.get(aid)
+            if not res_alert:
                 return QueryResult(rows=[], row_count=0)
             now = _now_iso()
-            alert["status"] = "resolved"
-            alert["resolved_at"] = now
-            alert["resolution_notes"] = notes
-            alert["updated_at"] = now
-            self.alerts[aid] = alert
-            return QueryResult(rows=[dict(alert)], row_count=1)
+            res_alert["status"] = "resolved"
+            res_alert["resolved_at"] = now
+            res_alert["resolution_notes"] = notes
+            res_alert["updated_at"] = now
+            self.alerts[aid] = res_alert
+            return QueryResult(rows=[dict(res_alert)], row_count=1)
 
         if trimmed.startswith("DELETE FROM alerts WHERE id = %s"):
             aid = str(params[0])

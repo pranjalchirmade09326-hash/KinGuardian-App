@@ -7,9 +7,11 @@ import { SimulatorControls } from '../../src/components/SimulatorControls';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Clock, Pill, Calendar, Plus, X, UserPlus } from 'lucide-react-native';
 import { RAMESH_USER_ID } from '../../src/store/AuthProvider';
+import { AuthContext } from '../../src/store/AuthContext';
 
 export default function CoordinatorParentsRoute() {
   const context = useContext(AppContext);
+  const auth = useContext(AuthContext);
   const router = useRouter();
 
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -22,9 +24,10 @@ export default function CoordinatorParentsRoute() {
   if (!context) return null;
 
   const handleCreateParent = async () => {
-    if (!newName.trim()) return;
+    const cleanName = newName.replace(/\\/g, '').trim();
+    if (!cleanName) return;
     await context.addParent({
-      name: newName.trim(),
+      name: cleanName,
       relationship: newRelationship,
       city: newCity.trim() || 'Chennai',
       age: parseInt(newAge, 10) || 65,
@@ -32,8 +35,8 @@ export default function CoordinatorParentsRoute() {
     });
 
     if (newPhone.trim()) {
-      await context.addEmergencyContact(RAMESH_USER_ID, {
-        name: newName.trim(),
+      await context.addEmergencyContact(auth?.user?.id || RAMESH_USER_ID, {
+        name: cleanName,
         relationship: newRelationship,
         phone: newPhone.trim(),
         is_primary: false,
@@ -55,7 +58,9 @@ export default function CoordinatorParentsRoute() {
             <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
               Connected Profiles
             </Text>
-            <Text className="text-2xl font-bold text-neutral-900 tracking-tight mt-0.5">Parents</Text>
+            <Text className="text-2xl font-bold text-neutral-900 tracking-tight mt-0.5">
+              Parents
+            </Text>
           </View>
 
           <TouchableOpacity
@@ -69,119 +74,153 @@ export default function CoordinatorParentsRoute() {
         </View>
 
         <ScrollView className="flex-1 px-5 pt-4 space-y-4">
-          {context.people.map((p) => {
+          {(() => {
+            const parentMembers = context.people.filter((p) => {
+              const rel = (p.relationship || p.relation || '').toLowerCase();
+              return (
+                p.id === 'dad' ||
+                p.id === 'mom' ||
+                ['father', 'mother', 'dad', 'mom', 'parent', 'papa', 'mummy', 'grandfather', 'grandmother'].some(
+                  (role) => rel.includes(role)
+                )
+              );
+            });
+            return parentMembers.length === 0 ? (
+            <View className="bg-white rounded-2xl p-6 border border-neutral-100 items-center space-y-3 mt-2">
+              <View className="w-12 h-12 rounded-full bg-blue-50 items-center justify-center">
+                <UserPlus size={22} color="#007aff" />
+              </View>
+              <Text className="text-base font-bold text-neutral-900 text-center">
+                No Parents Connected Yet
+              </Text>
+              <Text className="text-xs text-neutral-500 text-center leading-relaxed">
+                Add your father or mother in India to start monitoring vitals, medications, and WhatsApp check-ins.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setAddModalOpen(true)}
+                activeOpacity={0.85}
+                className="bg-[#007aff] px-5 py-2.5 rounded-xl flex-row items-center gap-1.5 mt-1"
+              >
+                <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+                <Text className="text-white text-xs font-bold">Add Your First Parent</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            parentMembers.map((p) => {
             const isActive = context.currentPersonId === p.id;
             const isDad = p.id === 'dad' || p.relation?.toLowerCase() === 'father';
 
-              // Vitals check for alert status
-              const bpSystolic = parseInt(context.currentBP.split('/')[0] || '120', 10);
-              const isDadSpiked = bpSystolic >= 140;
-              const statusText = isDad
-                ? isDadSpiked
-                  ? 'Needs attention'
-                  : 'Doing well'
-                : 'Doing well';
-              const statusColor =
-                statusText === 'Needs attention'
-                  ? 'text-[#ff3b30] bg-red-50'
-                  : 'text-[#34c759] bg-emerald-50';
+            // Vitals check for alert status
+            const bpSystolic = parseInt(context.currentBP.split('/')[0] || '120', 10);
+            const isDadSpiked = bpSystolic >= 140;
+            const statusText = isDad
+              ? isDadSpiked
+                ? 'Needs attention'
+                : 'Doing well'
+              : 'Doing well';
+            const statusColor =
+              statusText === 'Needs attention'
+                ? 'text-[#ff3b30] bg-red-50'
+                : 'text-[#34c759] bg-emerald-50';
 
-              // Meds check
-              const isAtorvastatinTaken =
-                context.records
-                  .find((r) => r.id === 'rec-5')
-                  ?.status?.toLowerCase()
-                  .includes('taken') || false;
-              const medStatus = isDad ? (isAtorvastatinTaken ? 'Taken' : '1 pending') : 'Taken';
+            // Meds check
+            const isAtorvastatinTaken =
+              context.records
+                .find((r) => r.id === 'rec-5')
+                ?.status?.toLowerCase()
+                .includes('taken') || false;
+            const medStatus = isDad ? (isAtorvastatinTaken ? 'Taken' : '1 pending') : 'Taken';
 
-              // Appointment check
-              const nextAppt = isDad
-                ? 'Cardiology, Tomorrow 10:30 AM'
-                : 'Endocrinology, Next Monday 4:00 PM';
+            // Appointment check
+            const nextAppt = isDad
+              ? 'Cardiology, Tomorrow 10:30 AM'
+              : 'Endocrinology, Next Monday 4:00 PM';
 
-              return (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() => {
-                    context.setCurrentPersonId(p.id);
-                    router.push(`/(coordinator)/parent/${p.id}`);
-                  }}
-                  activeOpacity={0.8}
-                  className={`bg-white rounded-2xl p-5 border ${
-                    isActive ? 'border-[#007aff]' : 'border-neutral-100'
-                  } shadow-sm flex-row items-start gap-4`}
-                >
-                  <View className="relative">
-                    <Image source={{ uri: p.avatarUrl }} className="w-12 h-12 rounded-full" />
-                    <View
-                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                        isDad ? (isDadSpiked ? 'bg-[#ff3b30]' : 'bg-[#34c759]') : 'bg-[#34c759]'
-                      }`}
-                    />
-                  </View>
+            return (
+              <TouchableOpacity
+                key={p.id}
+                onPress={() => {
+                  context.setCurrentPersonId(p.id);
+                  router.push(`/(coordinator)/parent/${p.id}`);
+                }}
+                activeOpacity={0.8}
+                className={`bg-white rounded-2xl p-5 border ${
+                  isActive ? 'border-[#007aff]' : 'border-neutral-100'
+                } shadow-sm flex-row items-start gap-4`}
+              >
+                <View className="relative">
+                  <Image source={{ uri: p.avatarUrl }} className="w-12 h-12 rounded-full" />
+                  <View
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                      isDad ? (isDadSpiked ? 'bg-[#ff3b30]' : 'bg-[#34c759]') : 'bg-[#34c759]'
+                    }`}
+                  />
+                </View>
 
-                  <View className="flex-1 space-y-2">
-                    <View className="flex-row items-center justify-between flex-wrap gap-1">
-                      <View className="space-y-0.5">
-                        <Text className="text-base font-bold text-neutral-900 leading-none">
-                          {p.name}
-                        </Text>
-                        <Text className="text-[10px] text-neutral-400 font-semibold mt-0.5">
-                          {p.age} • {isDad ? 'Dad' : 'Mom'} • Chennai
-                        </Text>
-                      </View>
-
-                      <View className={`px-2 py-0.5 rounded-full ${statusColor}`}>
-                        <Text className="text-[8px] font-bold uppercase">{statusText}</Text>
-                      </View>
+                <View className="flex-1 space-y-2">
+                  <View className="flex-row items-center justify-between flex-wrap gap-1">
+                    <View className="space-y-0.5">
+                      <Text className="text-base font-bold text-neutral-900 leading-none">
+                        {p.name}
+                      </Text>
+                      <Text className="text-[10px] text-neutral-400 font-semibold mt-0.5">
+                        {p.age || 65} • {p.relation || p.relationship || 'Parent'} • {p.city || 'India'}
+                      </Text>
                     </View>
 
-                    {/* Vitals detail list stubs */}
-                    <View className="space-y-1.5 pt-2 border-t border-neutral-100">
-                      <View className="flex-row items-center gap-1.5">
-                        <Clock size={11} color="#8e8e93" />
-                        <Text className="text-[10px] text-neutral-500 font-semibold">
-                          Last check-in: {isDad ? '1 hour ago' : 'Yesterday 6:30 PM'}
-                        </Text>
-                      </View>
-
-                      <View className="flex-row items-center gap-1.5">
-                        <Pill size={11} color="#8e8e93" />
-                        <Text className="text-[10px] text-neutral-500 font-semibold">
-                          Medication status:{' '}
-                          <Text
-                            className={
-                              medStatus === 'Taken'
-                                ? 'text-[#34c759] font-bold'
-                                : 'text-[#ff9500] font-bold'
-                            }
-                          >
-                            {medStatus}
-                          </Text>
-                        </Text>
-                      </View>
-
-                      <View className="flex-row items-center gap-1.5">
-                        <Calendar size={11} color="#8e8e93" />
-                        <Text className="text-[10px] text-neutral-500 font-semibold">
-                          Next: {nextAppt}
-                        </Text>
-                      </View>
-
-                      <View className="pt-2 flex-row justify-between items-center">
-                        <Text className="text-[10px] font-bold text-[#007aff]">
-                          View Parent Profile &rarr;
-                        </Text>
-                      </View>
+                    <View className={`px-2 py-0.5 rounded-full ${statusColor}`}>
+                      <Text className="text-[8px] font-bold uppercase">{statusText}</Text>
                     </View>
                   </View>
 
-                  <View className="self-center pl-1">
-                    <ChevronRight size={16} color={isActive ? '#007aff' : '#8e8e93'} />
+                  {/* Vitals detail list stubs */}
+                  <View className="space-y-1.5 pt-2 border-t border-neutral-100">
+                    <View className="flex-row items-center gap-1.5">
+                      <Clock size={11} color="#8e8e93" />
+                      <Text className="text-[10px] text-neutral-500 font-semibold">
+                        Last check-in: {isDad ? '1 hour ago' : 'Yesterday 6:30 PM'}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center gap-1.5">
+                      <Pill size={11} color="#8e8e93" />
+                      <Text className="text-[10px] text-neutral-500 font-semibold">
+                        Medication status:{' '}
+                        <Text
+                          className={
+                            medStatus === 'Taken'
+                              ? 'text-[#34c759] font-bold'
+                              : 'text-[#ff9500] font-bold'
+                          }
+                        >
+                          {medStatus}
+                        </Text>
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center gap-1.5">
+                      <Calendar size={11} color="#8e8e93" />
+                      <Text className="text-[10px] text-neutral-500 font-semibold">
+                        Next: {nextAppt}
+                      </Text>
+                    </View>
+
+                    <View className="pt-2 flex-row justify-between items-center">
+                      <Text className="text-[10px] font-bold text-[#007aff]">
+                        View Parent Profile &rarr;
+                      </Text>
+                    </View>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
+                </View>
+
+                <View className="self-center pl-1">
+                  <ChevronRight size={16} color={isActive ? '#007aff' : '#8e8e93'} />
+                </View>
+              </TouchableOpacity>
+            );
+          })
+          );
+          })()}
 
           <View className="h-24" />
         </ScrollView>
@@ -310,7 +349,7 @@ export default function CoordinatorParentsRoute() {
                   onPress={handleCreateParent}
                   className="w-full bg-[#007aff] py-3 rounded-xl items-center justify-center mt-2 active:scale-95 shadow-sm"
                 >
-                  <Text className="text-white font-bold text-xs">Save & Connect to Database</Text>
+                  <Text className="text-white font-bold text-xs">Save Parent Profile</Text>
                 </TouchableOpacity>
               </View>
             </View>

@@ -1,7 +1,7 @@
 /**
  * @file AIService.ts
  * @description KinGuardian Mobile AI Service Interface and Mock Implementation.
- * 
+ *
  * ARCHITECTURAL PRINCIPLES:
  * 1. Persona Alignment: Provides calibrated, empathetic answers suitable for long-distance coordinators
  *    and local elderly parents without triggering unwarranted anxiety.
@@ -61,7 +61,6 @@ export class MockAIService implements AIService {
   private delay(): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, 800));
   }
-
 
   async ask(question: string, _personIds: string[]): Promise<AIResponse> {
     await this.delay();

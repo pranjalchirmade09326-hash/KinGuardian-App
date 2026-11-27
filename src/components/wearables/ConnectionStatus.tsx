@@ -3,7 +3,6 @@ import { View, Text } from 'react-native';
 import { CheckCircle2, RefreshCw, AlertCircle, Unplug, Clock } from 'lucide-react-native';
 import { ConnectionStatus as StatusType } from '../../services/health';
 
-
 interface ConnectionStatusProps {
   status: StatusType;
   showIcon?: boolean;
@@ -79,7 +78,17 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         <View className="mr-1.5">
           <IconComponent
             size={size === 'sm' ? 12 : size === 'md' ? 14 : 16}
-            color={status === 'error' ? '#e11d48' : status === 'syncing' ? '#2563eb' : status === 'delayed' ? '#d97706' : status === 'connected' || status === 'up_to_date' ? '#059669' : '#64748b'}
+            color={
+              status === 'error'
+                ? '#e11d48'
+                : status === 'syncing'
+                  ? '#2563eb'
+                  : status === 'delayed'
+                    ? '#d97706'
+                    : status === 'connected' || status === 'up_to_date'
+                      ? '#059669'
+                      : '#64748b'
+            }
           />
         </View>
       )}

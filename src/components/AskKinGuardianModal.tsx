@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Modal
+  Modal,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Sparkles, Send, X, FileText } from 'lucide-react-native';
 import { formatAIResponse, generateIntelligentHealthcareAnswer } from '../utils/aiFormatter';
@@ -86,14 +88,25 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
     setLoading(true);
 
     try {
-      const subjectName = currentSubject === 'mom' ? (context?.secondaryParentName || 'Mom') : (context?.primaryParentName || 'Dad');
+      const matchedParent =
+        context?.familyMembers.find(
+          (p) => p.id === currentSubject || p.backendSubjectId === currentSubject
+        ) || context?.familyMembers[0];
+      const subjectName =
+        matchedParent?.name ||
+        (currentSubject === 'mom'
+          ? context?.secondaryParentName || 'Mom'
+          : context?.primaryParentName || 'Dad');
 
       // Attempt to call backend AI endpoint if available, with intelligent fallback
       let rawResult: any = null;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       try {
         const response = await fetch(`${CONFIG.apiUrl}/api/v1/ai/ask`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             query: text,
             patientName: subjectName,
@@ -105,7 +118,9 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
           rawResult = jsonRes.data || jsonRes;
         }
       } catch (netErr) {
-        // Backend not reachable, will use local clinical engine
+        // Backend not reachable or timed out, will use local clinical engine
+      } finally {
+        clearTimeout(timeoutId);
       }
 
       if (!rawResult) {
@@ -148,10 +163,19 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
     }
   };
 
-  return (
-    <Modal visible={isOpen} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-white rounded-t-[28px] max-h-[85%] p-6 pt-3 space-y-4 shadow-xl">
+  if (Platform.OS === 'web' && !isOpen) {
+    return null;
+  }
+
+  const sheetContent = (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+    >
+      <View
+        style={{ width: '100%', maxHeight: '85%' }}
+        className="bg-white rounded-t-[28px] px-4 pb-5 pt-3 space-y-4 shadow-xl"
+      >
           {/* iOS Grabber Handle */}
           <View className="w-10 h-1.5 bg-neutral-200 rounded-full self-center mb-1.5" />
 
@@ -179,9 +203,12 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
           >
             {messages.map((m) => {
               const isAi = m.sender === 'ai';
-              const parsed = isAi ? formatAIResponse(m.text) : { answer: m.text, citations: m.citations };
+              const parsed = isAi
+                ? formatAIResponse(m.text)
+                : { answer: m.text, citations: m.citations };
               const displayText = parsed.answer || m.text;
-              const displayCitations = m.citations && m.citations.length > 0 ? m.citations : parsed.citations;
+              const displayCitations =
+                m.citations && m.citations.length > 0 ? m.citations : parsed.citations;
 
               return (
                 <View
@@ -262,6 +289,8 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
             <TextInput
               value={inputQuery}
               onChangeText={setInputQuery}
+              onSubmitEditing={() => handleSend(inputQuery)}
+              returnKeyType="send"
               placeholder="Ask KinGuardian medical questions..."
               placeholderTextColor="#8e8e93"
               className="flex-1 px-4 py-2.5 text-xs text-neutral-800 outline-none"
@@ -273,10 +302,30 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
               <Send size={14} color="#ffffff" />
             </TouchableOpacity>
           </View>
-        </View>
       </View>
+    </KeyboardAvoidingView>
+  );
+
+  if (Platform.OS === 'web') {
+    return (
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 999
+        }}
+      >
+        {sheetContent}
+      </View>
+    );
+  }
+
+  return (
+    <Modal visible={isOpen} animationType="slide" transparent={true} onRequestClose={onClose}>
+      {sheetContent}
     </Modal>
   );
 };
-
-

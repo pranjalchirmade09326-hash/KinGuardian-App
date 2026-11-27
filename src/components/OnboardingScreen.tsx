@@ -26,24 +26,50 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
   const [parentLoc, setParentLoc] = useState('India');
   const [careTarget, setCareTarget] = useState<'Mom' | 'Dad' | 'Both'>('Both');
 
-  // Parent details
+  // Father / Primary Parent details
   const [parentName, setParentName] = useState('');
   const [parentAge, setParentAge] = useState('');
   const [parentCity, setParentCity] = useState('');
   const [parentPhone, setParentPhone] = useState('');
 
+  // Mother details (shown when careTarget === 'Both' or 'Mom')
+  const [motherName, setMotherName] = useState('');
+  const [motherAge, setMotherAge] = useState('');
+  const [motherCity, setMotherCity] = useState('');
+  const [motherPhone, setMotherPhone] = useState('');
+
   // Invite parent channel
   const [inviteMethod, setInviteMethod] = useState<'WhatsApp' | 'SMS' | 'Email'>('WhatsApp');
 
   const handleNext = () => {
-    if (step === 5 && parentName.trim()) {
-      context?.addParent({
-        name: parentName.trim(),
-        relationship: careTarget === 'Mom' ? 'Mother' : careTarget === 'Dad' ? 'Father' : 'Parent',
-        city: parentCity.trim() || 'Chennai',
-        age: parseInt(parentAge, 10) || 65,
-        phone: parentPhone.trim()
-      });
+    if (step === 5) {
+      if ((careTarget === 'Dad' || careTarget === 'Both') && parentName.trim()) {
+        context?.addParent({
+          name: parentName.trim(),
+          relationship: 'Father',
+          city: parentCity.trim() || 'Chennai',
+          age: parseInt(parentAge, 10) || 68,
+          phone: parentPhone.trim()
+        });
+      }
+      if (careTarget === 'Mom' && parentName.trim()) {
+        context?.addParent({
+          name: parentName.trim(),
+          relationship: 'Mother',
+          city: parentCity.trim() || 'Chennai',
+          age: parseInt(parentAge, 10) || 64,
+          phone: parentPhone.trim()
+        });
+      }
+      if (careTarget === 'Both' && motherName.trim()) {
+        context?.addParent({
+          name: motherName.trim(),
+          relationship: 'Mother',
+          city: motherCity.trim() || parentCity.trim() || 'Chennai',
+          age: parseInt(motherAge, 10) || 64,
+          phone: motherPhone.trim()
+        });
+      }
     }
 
     if (step < 7) {
@@ -61,7 +87,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
 
   return (
     <ScrollView className="flex-1 bg-[#f2f2f7] px-4 py-8">
-      <View className="items-center justify-center py-4 space-y-5">
+      <View
+        style={{ maxWidth: 520, width: '100%', alignSelf: 'center' }}
+        className="items-center justify-center py-4 space-y-5"
+      >
         {onBackToAuth && (
           <View className="w-full flex-row justify-start mb-1">
             <TouchableOpacity
@@ -174,10 +203,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
               </TouchableOpacity>
 
               <Text className="text-[10px] text-neutral-400 text-center font-semibold px-4 leading-normal mt-4">
-                KinGuardian is currently optimized for cross-border care delivery between the West/Gulf
-                regions and parents residing in India.
+                KinGuardian is currently optimized for cross-border care delivery between the
+                West/Gulf regions and parents residing in India.
               </Text>
-
             </View>
           )}
 
@@ -216,17 +244,26 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
             </View>
           )}
 
-          {/* STEP 5: Add parent */}
+          {/* STEP 5: Add parent(s) */}
           {step === 5 && (
-            <View className="space-y-3 w-full py-2">
+            <View className="space-y-4 w-full py-2">
               <View className="items-center">
                 <Smartphone size={40} color="#007aff" />
               </View>
               <Text className="text-lg font-bold text-neutral-900 tracking-tight text-center">
-                Add Parent details
+                {careTarget === 'Both'
+                  ? 'Add Father & Mother Details'
+                  : careTarget === 'Mom'
+                    ? 'Add Mother Details'
+                    : 'Add Father Details'}
               </Text>
 
-              <View className="space-y-3 mt-2">
+              {/* Father (or single Mom if careTarget === 'Mom') */}
+              <View className="space-y-3 mt-1 p-3.5 rounded-2xl bg-neutral-50/70 border border-neutral-200/80">
+                <Text className="text-xs font-extrabold text-[#007aff] uppercase tracking-wider">
+                  {careTarget === 'Mom' ? 'Mother Details' : 'Father Details'}
+                </Text>
+
                 <View className="space-y-1">
                   <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
                     Full Name
@@ -234,37 +271,39 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
                   <TextInput
                     value={parentName}
                     onChangeText={setParentName}
-                    placeholder="e.g. Ramesh Kumar"
+                    placeholder={careTarget === 'Mom' ? 'e.g. Vandana' : 'e.g. Aniruddha'}
                     placeholderTextColor="#8e8e93"
-                    className="bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-800 focus:border-[#007aff]"
+                    className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
                   />
                 </View>
 
-                <View className="space-y-1">
-                  <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                    Age
-                  </Text>
-                  <TextInput
-                    value={parentAge}
-                    onChangeText={setParentAge}
-                    placeholder="e.g. 68"
-                    placeholderTextColor="#8e8e93"
-                    keyboardType="numeric"
-                    className="bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-800 focus:border-[#007aff]"
-                  />
-                </View>
+                <View className="flex-row gap-2.5">
+                  <View className="flex-1 space-y-1">
+                    <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                      Age
+                    </Text>
+                    <TextInput
+                      value={parentAge}
+                      onChangeText={setParentAge}
+                      placeholder={careTarget === 'Mom' ? '64' : '68'}
+                      placeholderTextColor="#8e8e93"
+                      keyboardType="numeric"
+                      className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
+                    />
+                  </View>
 
-                <View className="space-y-1">
-                  <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                    City (India)
-                  </Text>
-                  <TextInput
-                    value={parentCity}
-                    onChangeText={setParentCity}
-                    placeholder="e.g. Chennai"
-                    placeholderTextColor="#8e8e93"
-                    className="bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-800 focus:border-[#007aff]"
-                  />
+                  <View className="flex-1 space-y-1">
+                    <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                      City (India)
+                    </Text>
+                    <TextInput
+                      value={parentCity}
+                      onChangeText={setParentCity}
+                      placeholder="e.g. Pune"
+                      placeholderTextColor="#8e8e93"
+                      className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
+                    />
+                  </View>
                 </View>
 
                 <View className="space-y-1">
@@ -277,10 +316,75 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
                     placeholder="+91 XXXXX XXXXX"
                     placeholderTextColor="#8e8e93"
                     keyboardType="phone-pad"
-                    className="bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-800 focus:border-[#007aff]"
+                    className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
                   />
                 </View>
               </View>
+
+              {/* Second Form: Mother Details when careTarget === 'Both' */}
+              {careTarget === 'Both' && (
+                <View className="space-y-3 p-3.5 rounded-2xl bg-orange-50/40 border border-orange-200/80">
+                  <Text className="text-xs font-extrabold text-[#ff9500] uppercase tracking-wider">
+                    Mother Details
+                  </Text>
+
+                  <View className="space-y-1">
+                    <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                      Full Name
+                    </Text>
+                    <TextInput
+                      value={motherName}
+                      onChangeText={setMotherName}
+                      placeholder="e.g. Vandana"
+                      placeholderTextColor="#8e8e93"
+                      className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
+                    />
+                  </View>
+
+                  <View className="flex-row gap-2.5">
+                    <View className="flex-1 space-y-1">
+                      <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                        Age
+                      </Text>
+                      <TextInput
+                        value={motherAge}
+                        onChangeText={setMotherAge}
+                        placeholder="64"
+                        placeholderTextColor="#8e8e93"
+                        keyboardType="numeric"
+                        className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
+                      />
+                    </View>
+
+                    <View className="flex-1 space-y-1">
+                      <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                        City (India)
+                      </Text>
+                      <TextInput
+                        value={motherCity}
+                        onChangeText={setMotherCity}
+                        placeholder={parentCity || 'e.g. Pune'}
+                        placeholderTextColor="#8e8e93"
+                        className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
+                      />
+                    </View>
+                  </View>
+
+                  <View className="space-y-1">
+                    <Text className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                      Phone Number
+                    </Text>
+                    <TextInput
+                      value={motherPhone}
+                      onChangeText={setMotherPhone}
+                      placeholder="+91 XXXXX XXXXX"
+                      placeholderTextColor="#8e8e93"
+                      keyboardType="phone-pad"
+                      className="bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-800 focus:border-[#007aff]"
+                    />
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -294,7 +398,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
                 Invite Parent
               </Text>
               <Text className="text-xs text-neutral-400 text-center leading-normal px-2">
-                Send {parentName || context?.primaryParentName || 'your parent'} a reassuring invitation message to link their wearable health sensors.
+                Send {parentName || context?.primaryParentName || 'your parent'} a reassuring
+                invitation message to link their wearable health sensors.
               </Text>
 
               <View className="space-y-2 mt-2">
@@ -317,18 +422,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
                   </TouchableOpacity>
                 ))}
               </View>
-
-              {inviteMethod === 'WhatsApp' && (
-                <View className="mt-3">
-                  <WhatsAppButton
-                    phone={parentPhone || '9270756299'}
-                    text={WhatsAppTemplates.parentInvite(parentName || context?.primaryParentName || 'Dad', context?.coordinatorName || 'Coordinator')}
-                    label="Send WhatsApp Invitation Now"
-                    size="md"
-                    variant="solid"
-                  />
-                </View>
-              )}
             </View>
           )}
 
@@ -342,12 +435,28 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete, 
                 Connected!
               </Text>
               <Text className="text-base font-semibold text-neutral-700 text-center leading-snug px-4">
-                “You're now connected to Mom & Dad.”
+                “You're now connected to {parentName || context?.primaryParentName || 'your parent'}.”
               </Text>
               <Text className="text-xs text-neutral-400 text-center leading-normal px-6">
-                {context?.primaryParentName || 'Dad'}'s blood pressure monitor and {context?.secondaryParentName || 'Mom'}'s glucose levels will now transmit
-                updates automatically. {context?.coordinatorName || 'Coordinator'} is active as primary coordinator.
+                {parentName || context?.primaryParentName || 'Parent'}'s wearable and health
+                updates will now sync automatically. {context?.coordinatorName || 'Coordinator'} is
+                active as primary coordinator.
               </Text>
+
+              {inviteMethod === 'WhatsApp' && (
+                <View className="w-full mt-2 pt-2">
+                  <WhatsAppButton
+                    phone={parentPhone || '9270756299'}
+                    text={WhatsAppTemplates.parentInvite(
+                      parentName || context?.primaryParentName || 'Parent',
+                      context?.coordinatorName || 'Coordinator'
+                    )}
+                    label="Send WhatsApp Invitation Now"
+                    size="md"
+                    variant="solid"
+                  />
+                </View>
+              )}
             </View>
           )}
 

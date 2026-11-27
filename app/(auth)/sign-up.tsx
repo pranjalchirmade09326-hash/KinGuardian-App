@@ -1,13 +1,35 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  useWindowDimensions,
+  Platform,
+  KeyboardAvoidingView
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Heart, ArrowLeft, Eye, EyeOff, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react-native';
+import {
+  Heart,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  UserCheck
+} from 'lucide-react-native';
 import { useAuth } from '../../src/hooks/useAuth';
 import { signUpSchema } from '../../src/utils/validation';
 import { UserRole } from '../../src/types/auth';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const isSmallMobile = width < 400;
   const { signUp, error: authError, clearError } = useAuth();
 
   const [name, setName] = useState('');
@@ -65,27 +87,87 @@ export default function SignUpScreen() {
   };
 
   const displayError = validationError || authError;
+  const isWeb = Platform.OS === 'web';
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ paddingBottom: 50 }}>
-      {/* Top Bar */}
-      <View className="px-6 py-4 flex-row items-center justify-between border-b border-neutral-100">
-        <TouchableOpacity
-          onPress={() => router.push('/(auth)/landing')}
-          className="p-1.5 rounded-full active:bg-neutral-100 -ml-1.5"
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDesktop ? '#f8fafc' : '#ffffff' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          style={{ flex: 1, backgroundColor: isDesktop ? '#f8fafc' : '#ffffff' }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: 50,
+            ...(isDesktop
+              ? {
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingVertical: 40,
+                  paddingHorizontal: 24
+                }
+              : {})
+          }}
         >
-          <ArrowLeft size={20} color="#1c1c1e" />
-        </TouchableOpacity>
-        <View className="flex-row items-center gap-2">
-          <View className="w-7 h-7 rounded-lg bg-[#007aff] items-center justify-center">
-            <Heart size={16} color="#ffffff" />
+      <View
+        style={{
+          width: '100%',
+          ...(isDesktop
+            ? {
+                maxWidth: 540,
+                backgroundColor: '#ffffff',
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: '#e2e8f0',
+                shadowColor: '#000',
+                shadowOpacity: 0.06,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: 10 },
+                overflow: 'hidden'
+              }
+            : {})
+        }}
+      >
+        {/* Top Bar */}
+        <View
+          style={{ paddingHorizontal: isSmallMobile ? 16 : 24, paddingVertical: 16 }}
+          className="flex-row items-center justify-between border-b border-neutral-100"
+        >
+          {isWeb ? (
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/landing')}
+              className="p-1.5 rounded-full active:bg-neutral-100 -ml-1.5"
+            >
+              <ArrowLeft size={20} color="#1c1c1e" />
+            </TouchableOpacity>
+          ) : (
+            <View className="w-7" />
+          )}
+          <View className="flex-row items-center gap-2">
+            <View className="w-7 h-7 rounded-lg bg-[#007aff] items-center justify-center">
+              <Heart size={16} color="#ffffff" />
+            </View>
+            <Text className="text-base font-extrabold text-neutral-900">KinGuardian</Text>
           </View>
-          <Text className="text-base font-extrabold text-neutral-900">KinGuardian</Text>
+          <View className="w-7" />
         </View>
-        <View className="w-7" />
-      </View>
 
-      <View className="px-6 pt-6 pb-4">
+        <View style={{ paddingHorizontal: isSmallMobile ? 16 : 24, paddingTop: 20, paddingBottom: isDesktop ? 28 : 16 }}>
+        {/* Mobile/Web Auth Mode Switcher */}
+        <View className="flex-row bg-neutral-100 p-1 rounded-xl mb-5">
+          <TouchableOpacity
+            onPress={() => router.replace('/(auth)/sign-in')}
+            activeOpacity={0.8}
+            className="flex-1 py-2 rounded-lg items-center"
+          >
+            <Text className="text-xs font-semibold text-neutral-500">Sign In</Text>
+          </TouchableOpacity>
+          <View className="flex-1 bg-white py-2 rounded-lg items-center shadow-xs">
+            <Text className="text-xs font-bold text-[#007aff]">Sign Up</Text>
+          </View>
+        </View>
         <Text className="text-2xl font-extrabold text-neutral-900 tracking-tight">
           Create Family Account
         </Text>
@@ -104,7 +186,7 @@ export default function SignUpScreen() {
         {/* Role Selector Cards */}
         <View className="mt-6 space-y-2">
           <Text className="text-xs font-bold text-neutral-700">Select Your Role</Text>
-          <View className="flex-row gap-3">
+          <View style={{ flexDirection: isSmallMobile ? 'column' : 'row', gap: 12 }}>
             <TouchableOpacity
               onPress={() => setRole('coordinator')}
               className={`flex-1 p-3.5 rounded-2xl border ${
@@ -174,7 +256,7 @@ export default function SignUpScreen() {
             </View>
           </View>
 
-          <View className="flex-row gap-3">
+          <View style={{ flexDirection: isSmallMobile ? 'column' : 'row', gap: 12 }}>
             <View className="flex-1">
               <Text className="text-xs font-bold text-neutral-700 mb-1">City</Text>
               <View className="bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5">
@@ -203,7 +285,9 @@ export default function SignUpScreen() {
           </View>
 
           <View>
-            <Text className="text-xs font-bold text-neutral-700 mb-1">Phone Number (WhatsApp alerts)</Text>
+            <Text className="text-xs font-bold text-neutral-700 mb-1">
+              Phone Number (WhatsApp alerts)
+            </Text>
             <View className="bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5">
               <TextInput
                 value={phone}
@@ -279,7 +363,10 @@ export default function SignUpScreen() {
             <Text className="text-xs font-bold text-[#007aff]">Sign In</Text>
           </TouchableOpacity>
         </View>
+        </View>
       </View>
     </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

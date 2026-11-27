@@ -187,9 +187,7 @@ export const WhatsAppCareHubModal: React.FC<WhatsAppCareHubModalProps> = ({
                       key={tpl.id}
                       onPress={() => setSelectedTemplate(tpl.id as any)}
                       className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
-                        active
-                          ? 'bg-emerald-50 border-[#128C7E]'
-                          : 'bg-white border-neutral-200'
+                        active ? 'bg-emerald-50 border-[#128C7E]' : 'bg-white border-neutral-200'
                       }`}
                     >
                       <Icon size={14} color={active ? '#128C7E' : tpl.color} />
@@ -238,9 +236,7 @@ export const WhatsAppCareHubModal: React.FC<WhatsAppCareHubModalProps> = ({
               className="mt-6 w-full bg-[#25D366] py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-md shadow-emerald-500/20 active:opacity-95"
             >
               <Send size={18} color="#ffffff" />
-              <Text className="text-sm font-black text-white">
-                Open & Send via WhatsApp
-              </Text>
+              <Text className="text-sm font-black text-white">Open & Send via WhatsApp</Text>
             </TouchableOpacity>
 
             {sentSuccess && (
@@ -281,7 +277,9 @@ export const WhatsAppCareHubModal: React.FC<WhatsAppCareHubModalProps> = ({
                     </View>
                     <View className="flex-1">
                       <View className="flex-row items-center justify-between">
-                        <Text className="text-[10px] font-bold text-neutral-800">{reply.senderName}</Text>
+                        <Text className="text-[10px] font-bold text-neutral-800">
+                          {reply.senderName}
+                        </Text>
                         <Text className="text-[9px] text-neutral-400">{reply.receivedAt}</Text>
                       </View>
                       <Text className="text-xs text-neutral-700 mt-0.5">{reply.messageText}</Text>

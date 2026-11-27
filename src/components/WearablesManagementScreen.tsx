@@ -27,7 +27,6 @@ import {
   Flame
 } from 'lucide-react-native';
 
-
 export interface WearableDeviceItem {
   id: string;
   name: string;
@@ -56,7 +55,6 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
   parentName = 'Ramesh Sharma (Dad)',
   onBack
 }) => {
-
   const [devices, setDevices] = useState<WearableDeviceItem[]>([
     {
       id: 'dev_apple_watch',
@@ -122,7 +120,9 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
     }
   ]);
 
-  const [selectedDeviceForPerms, setSelectedDeviceForPerms] = useState<WearableDeviceItem | null>(null);
+  const [selectedDeviceForPerms, setSelectedDeviceForPerms] = useState<WearableDeviceItem | null>(
+    null
+  );
   const [connectModalDevice, setConnectModalDevice] = useState<WearableDeviceItem | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [syncingDeviceId, setSyncingDeviceId] = useState<string | null>(null);
@@ -212,10 +212,7 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
   };
 
   // ACTION 4: Toggle Permissions
-  const handleTogglePermission = (
-    key: keyof WearableDeviceItem['permissions'],
-    value: boolean
-  ) => {
+  const handleTogglePermission = (key: keyof WearableDeviceItem['permissions'], value: boolean) => {
     if (!selectedDeviceForPerms) return;
     const updatedPerms = {
       ...selectedDeviceForPerms.permissions,
@@ -226,9 +223,7 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
       permissions: updatedPerms
     };
     setSelectedDeviceForPerms(updatedDev);
-    setDevices((prev) =>
-      prev.map((d) => (d.id === updatedDev.id ? updatedDev : d))
-    );
+    setDevices((prev) => prev.map((d) => (d.id === updatedDev.id ? updatedDev : d)));
   };
 
   const connectedDevices = devices.filter((d) => d.status === 'connected');
@@ -277,11 +272,11 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
               Continuous Telemetry Ingestion
             </Text>
             <Text className="text-white/80 text-[11px] font-medium leading-relaxed mt-0.5">
-              Biometrics flow from hardware into KinGuardian Guardian AI to detect mobility and recovery trends.
+              Biometrics flow from hardware into KinGuardian Guardian AI to detect mobility and
+              recovery trends.
             </Text>
           </View>
         </View>
-
 
         {/* ========================================================================= */}
         {/* SECTION 1: CONNECTED DEVICES                                              */}
@@ -311,19 +306,13 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
                     </View>
                     <View>
                       <View className="flex-row items-center gap-2">
-                        <Text className="text-base font-black text-slate-900">
-                          {device.name}
-                        </Text>
+                        <Text className="text-base font-black text-slate-900">{device.name}</Text>
                         <View className="bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 flex-row items-center gap-1">
                           <CheckCircle2 size={10} color="#059669" />
-                          <Text className="text-[10px] font-bold text-emerald-700">
-                            Connected
-                          </Text>
+                          <Text className="text-[10px] font-bold text-emerald-700">Connected</Text>
                         </View>
                       </View>
-                      <Text className="text-xs text-slate-500 font-medium">
-                        {device.model}
-                      </Text>
+                      <Text className="text-xs text-slate-500 font-medium">{device.model}</Text>
                     </View>
                   </View>
 
@@ -355,9 +344,7 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
                     ) : (
                       <>
                         <RefreshCw size={11} color="#2a14b4" />
-                        <Text className="text-[11px] font-bold text-[#2a14b4]">
-                          Sync Now
-                        </Text>
+                        <Text className="text-[11px] font-bold text-[#2a14b4]">Sync Now</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -428,13 +415,9 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-base font-black text-slate-900">
-                      {device.name}
-                    </Text>
+                    <Text className="text-base font-black text-slate-900">{device.name}</Text>
                     <View className="bg-slate-100 rounded-full px-2 py-0.5">
-                      <Text className="text-[10px] font-bold text-slate-500">
-                        Not connected
-                      </Text>
+                      <Text className="text-[10px] font-bold text-slate-500">Not connected</Text>
                     </View>
                   </View>
                   <Text className="text-xs text-slate-500 font-medium">
@@ -472,9 +455,7 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
                   <Lock size={18} color="#2a14b4" />
                 </View>
                 <View>
-                  <Text className="text-base font-black text-slate-900">
-                    Data Permissions
-                  </Text>
+                  <Text className="text-base font-black text-slate-900">Data Permissions</Text>
                   <Text className="text-xs text-slate-500 font-medium">
                     {selectedDeviceForPerms?.name} • Consent Scope
                   </Text>
@@ -491,7 +472,8 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
             <View className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3.5 flex-row items-start gap-2.5">
               <Info size={16} color="#2a14b4" className="mt-0.5" />
               <Text className="text-xs text-slate-600 font-medium leading-relaxed flex-1">
-                KinGuardian only requests read-only telemetry. Zero account credentials or passwords are ever received or stored on your device.
+                KinGuardian only requests read-only telemetry. Zero account credentials or passwords
+                are ever received or stored on your device.
               </Text>
             </View>
 
@@ -642,7 +624,8 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
                 Wearable Health Data Consent
               </Text>
               <Text className="text-xs text-slate-500 text-center font-medium px-4 leading-relaxed">
-                Wearable data is protected health information. Please confirm the data scopes to share with KinGuardian.
+                Wearable data is protected health information. Please confirm the data scopes to
+                share with KinGuardian.
               </Text>
             </View>
 
@@ -654,15 +637,21 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
               <View className="space-y-1.5 pl-1">
                 <View className="flex-row items-center gap-2">
                   <CheckCircle2 size={14} color="#059669" />
-                  <Text className="text-xs font-bold text-slate-800">Activity (Steps, movement, active minutes)</Text>
+                  <Text className="text-xs font-bold text-slate-800">
+                    Activity (Steps, movement, active minutes)
+                  </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
                   <CheckCircle2 size={14} color="#059669" />
-                  <Text className="text-xs font-bold text-slate-800">Sleep (Duration, stages, sleep quality)</Text>
+                  <Text className="text-xs font-bold text-slate-800">
+                    Sleep (Duration, stages, sleep quality)
+                  </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
                   <CheckCircle2 size={14} color="#059669" />
-                  <Text className="text-xs font-bold text-slate-800">Heart rate (Resting pulse, continuous HR, HRV)</Text>
+                  <Text className="text-xs font-bold text-slate-800">
+                    Heart rate (Resting pulse, continuous HR, HRV)
+                  </Text>
                 </View>
               </View>
               <View className="pt-2 border-t border-indigo-100 flex-row items-center gap-1.5">
@@ -681,11 +670,10 @@ export const WearablesManagementScreen: React.FC<WearablesManagementScreenProps>
                 </Text>
               </View>
               <Text className="text-[10px] text-slate-500 font-medium leading-relaxed">
-                KinGuardian never receives or stores your device passwords or vendor login credentials.
+                KinGuardian never receives or stores your device passwords or vendor login
+                credentials.
               </Text>
             </View>
-
-
 
             <TouchableOpacity
               onPress={() => connectModalDevice && handleConfirmOAuthConnect(connectModalDevice)}

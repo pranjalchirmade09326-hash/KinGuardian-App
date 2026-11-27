@@ -289,7 +289,6 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({
                     : 'KinGuardian AI OCR Scanning...'}
               </Text>
               <Text className="text-[9px] font-bold text-neutral-400 mt-1">
-
                 Uploading files to London Vault ({scanProgress}%)
               </Text>
             </View>

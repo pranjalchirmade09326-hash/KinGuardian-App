@@ -1,5 +1,14 @@
 import { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  Platform
+} from 'react-native';
 import { AppContext } from '../../src/store/AppContext';
 import { BottomNavBar } from '../../src/components/Navigation';
 import { DeviceFrame } from '../../src/components/DeviceFrame';
@@ -98,7 +107,8 @@ export default function CoordinatorProfileRoute() {
                   {user?.name || context.coordinatorName || 'Coordinator'}
                 </Text>
                 <Text className="text-xs text-neutral-400 mt-1 font-semibold">
-                  {user?.city || 'London'}, {user?.country || 'United Kingdom'} ({user?.timezone || 'BST'})
+                  {user?.city || 'London'}, {user?.country || 'United Kingdom'} (
+                  {user?.timezone || 'BST'})
                 </Text>
                 {user?.phone ? (
                   <Text className="text-[10px] text-neutral-400 font-medium mt-0.5">
@@ -123,8 +133,8 @@ export default function CoordinatorProfileRoute() {
               <Text className="text-sm font-bold text-neutral-900">Prototype Persona Switcher</Text>
             </View>
             <Text className="text-xs text-neutral-500 leading-normal">
-              Test the two-sided product experiences. Switch to Parent Mode to see Ramesh's
-              large high-contrast checklist in Chennai.
+              Test the two-sided product experiences. Switch to Parent Mode to see Ramesh's large
+              high-contrast checklist in Chennai.
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -174,22 +184,6 @@ export default function CoordinatorProfileRoute() {
               </View>
               <ChevronRight size={14} color="#8e8e93" />
             </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setShowDevicesModal(true)}
-              className="p-4 flex-row items-center justify-between active:bg-neutral-50"
-            >
-              <View className="flex-row items-center gap-3">
-                <Smartphone size={16} color="#af52de" />
-                <View>
-                  <Text className="text-xs font-bold text-neutral-800">Connected Devices</Text>
-                  <Text className="text-[10px] text-neutral-400 font-semibold mt-0.5">
-                    Dexcom G7, Omron 7000, Apple Watch
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={14} color="#8e8e93" />
-            </TouchableOpacity>
           </View>
 
           {/* Sign Out Action */}
@@ -197,7 +191,7 @@ export default function CoordinatorProfileRoute() {
             onPress={async () => {
               await signOut();
               context.showToast('Signed out of KinGuardian');
-              router.replace('/(auth)/landing');
+              router.replace(Platform.OS === 'web' ? '/(auth)/landing' : '/(auth)/sign-in');
             }}
             activeOpacity={0.8}
             className="w-full bg-red-50 border border-red-200 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-xs"
@@ -321,8 +315,8 @@ export default function CoordinatorProfileRoute() {
                     Device Pairings
                   </Text>
                   <Text className="text-xs text-neutral-500 font-semibold leading-relaxed">
-                    Manage external telemetry sensors mapped to {context.primaryParentName} &amp; {context.secondaryParentName}'s health
-                    profiles.
+                    Manage external telemetry sensors mapped to {context.primaryParentName} &amp;{' '}
+                    {context.secondaryParentName}'s health profiles.
                   </Text>
                 </View>
 

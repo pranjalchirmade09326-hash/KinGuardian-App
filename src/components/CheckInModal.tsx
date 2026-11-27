@@ -6,7 +6,7 @@ import { AppContext } from '../store/AppContext';
 
 interface CheckInModalProps {
   isOpen: boolean;
-  person: Person;
+  person?: Person;
   onClose: () => void;
   onSendCheckIn: (msg: string) => void;
 }
@@ -19,10 +19,13 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 }) => {
   const context = useContext(AppContext);
   const coordName = context?.coordinatorName?.split(' ')[0] || 'Coordinator';
+  const parentFirstName = person?.name?.split(' ')[0] || 'Parent';
   const options = [
     `Everything is going well here, ${coordName}!`,
-    'Had a healthy lunch with Suresh sir.',
-    'Chennai weather is hot, staying indoors in AC.',
+    'Had a healthy lunch and resting comfortably.',
+    person?.city
+      ? `${person.city} weather is warm, staying indoors in AC.`
+      : 'Staying comfortable indoors today.',
     'Confirming that evening medicines are taken.'
   ];
 
@@ -38,7 +41,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
             <View className="flex-row items-center gap-2">
               <Heart size={18} color="#ff3b30" fill="#ff3b30" />
               <Text className="text-lg font-bold text-neutral-900 tracking-tight">
-                Check in with {person.name.split(' ')[0]}
+                Check in with {parentFirstName}
               </Text>
             </View>
             <TouchableOpacity

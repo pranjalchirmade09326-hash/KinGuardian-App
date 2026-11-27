@@ -17,9 +17,10 @@ import {
   ShieldCheck,
   Activity,
   Heart,
-  Flame,
   Smartphone,
-  Radio
+  Radio,
+  Footprints,
+  Moon
 } from 'lucide-react-native';
 import { AppContext } from '../store/AppContext';
 
@@ -37,9 +38,11 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
 
   // Live Fit Telemetry States
   const [stepCount, setStepCount] = useState(4820);
-  const [heartRate, setHeartRate] = useState(72);
-  const [activeCalories, setActiveCalories] = useState(340);
-  const [moveMinutes, setMoveMinutes] = useState(38);
+  const [bpValue, setBpValue] = useState(
+    context?.currentBP ? context.currentBP.replace(' mmHg', '').trim() : '120/80'
+  );
+  const [sleepHours, setSleepHours] = useState('7.5');
+  const [heartRate] = useState(72);
 
   // ACTION 1: Reconnect / Live Sync Google Fit
   const handleReconnect = () => {
@@ -49,9 +52,8 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
       setLastUpdatedText('Just now');
       setDeviceConnected(true);
       setStepCount((prev) => prev + Math.floor(Math.random() * 25) + 5);
-      setHeartRate(70 + Math.floor(Math.random() * 5));
-      setActiveCalories((prev) => prev + 4);
-      setMoveMinutes((prev) => prev + 1);
+      setBpValue(context?.currentBP ? context.currentBP.replace(' mmHg', '').trim() : '120/80');
+      setSleepHours('7.5');
 
       context?.showToast('Google Fit live telemetry synchronized!');
       Alert.alert(
@@ -89,9 +91,7 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
             <Text className="text-sm font-bold text-[#007aff]">Back</Text>
           </TouchableOpacity>
         )}
-        <Text className="text-2xl font-black text-slate-900 tracking-tight">
-          My health devices
-        </Text>
+        <Text className="text-2xl font-black text-slate-900 tracking-tight">My health devices</Text>
         <Text className="text-sm text-slate-500 font-medium mt-1">
           Live sync with Google Fit &amp; connected health trackers
         </Text>
@@ -110,9 +110,7 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
                   <Activity size={32} color="#007aff" />
                 </View>
                 <View>
-                  <Text className="text-xl font-black text-slate-900">
-                    Google Fit
-                  </Text>
+                  <Text className="text-xl font-black text-slate-900">Google Fit</Text>
                   <View className="flex-row items-center gap-1.5 mt-1">
                     <View className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                     <Text className="text-sm font-bold text-emerald-700">
@@ -137,9 +135,7 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
                   </Text>
                 </View>
                 <View className="bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                  <Text className="text-[9px] font-bold text-emerald-800 uppercase">
-                    Streaming
-                  </Text>
+                  <Text className="text-[9px] font-bold text-emerald-800 uppercase">Streaming</Text>
                 </View>
               </View>
 
@@ -160,38 +156,59 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
                 </View>
               </View>
 
-              {/* 3 Metrics Row */}
-              <View className="flex-row gap-2 pt-1">
-                {/* Heart Rate */}
-                <View className="flex-1 bg-white p-3 rounded-xl border border-blue-100/80 items-center">
+              {/* 4 Metrics Grid: Steps, BP, Sleep, Heart Rate (HR) */}
+              <View className="flex-row flex-wrap gap-2.5 pt-1">
+                {/* Steps */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-3 rounded-xl border border-blue-100/80 items-center"
+                >
+                  <Footprints size={16} color="#007aff" />
+                  <Text className="text-base font-black text-slate-900 mt-1">
+                    {stepCount.toLocaleString()}
+                  </Text>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">
+                    Steps
+                  </Text>
+                </View>
+
+                {/* Blood Pressure (BP) */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-3 rounded-xl border border-blue-100/80 items-center"
+                >
                   <Heart size={16} color="#e11d48" />
+                  <Text className="text-base font-black text-slate-900 mt-1">
+                    {bpValue} <Text className="text-[10px] text-slate-400 font-bold">mmHg</Text>
+                  </Text>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">BP</Text>
+                </View>
+
+                {/* Sleep Hours */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-3 rounded-xl border border-blue-100/80 items-center"
+                >
+                  <Moon size={16} color="#6366f1" />
+                  <Text className="text-base font-black text-slate-900 mt-1">
+                    {sleepHours} <Text className="text-[10px] text-slate-400 font-bold">hrs</Text>
+                  </Text>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">
+                    Sleep
+                  </Text>
+                </View>
+
+                {/* Heart Rate (HR) */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-3 rounded-xl border border-blue-100/80 items-center"
+                >
+                  <Activity size={16} color="#059669" />
                   <Text className="text-base font-black text-slate-900 mt-1">
                     {heartRate} <Text className="text-[10px] text-slate-400 font-bold">BPM</Text>
                   </Text>
                   <Text className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">
-                    Resting Pulse
-                  </Text>
-                </View>
-
-                {/* Move Minutes */}
-                <View className="flex-1 bg-white p-3 rounded-xl border border-blue-100/80 items-center">
-                  <Activity size={16} color="#059669" />
-                  <Text className="text-base font-black text-slate-900 mt-1">
-                    {moveMinutes} <Text className="text-[10px] text-slate-400 font-bold">min</Text>
-                  </Text>
-                  <Text className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">
-                    Active Time
-                  </Text>
-                </View>
-
-                {/* Calories */}
-                <View className="flex-1 bg-white p-3 rounded-xl border border-blue-100/80 items-center">
-                  <Flame size={16} color="#ea580c" />
-                  <Text className="text-base font-black text-slate-900 mt-1">
-                    {activeCalories} <Text className="text-[10px] text-slate-400 font-bold">kcal</Text>
-                  </Text>
-                  <Text className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">
-                    Burned
+                    Heart Rate (HR)
                   </Text>
                 </View>
               </View>
@@ -211,9 +228,7 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
                 <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                   Last Updated
                 </Text>
-                <Text className="text-xs font-black text-slate-800 mt-0.5">
-                  {lastUpdatedText}
-                </Text>
+                <Text className="text-xs font-black text-slate-800 mt-0.5">{lastUpdatedText}</Text>
               </View>
             </View>
 
@@ -228,9 +243,7 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
               ) : (
                 <>
                   <RefreshCw size={18} color="#ffffff" />
-                  <Text className="text-base font-bold text-white">
-                    Sync Live Google Fit Data
-                  </Text>
+                  <Text className="text-base font-bold text-white">Sync Live Google Fit Data</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -249,11 +262,10 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
             <View className="w-16 h-16 rounded-full bg-blue-50 items-center justify-center">
               <Activity size={32} color="#007aff" />
             </View>
-            <Text className="text-lg font-black text-slate-800">
-              No device connected
-            </Text>
+            <Text className="text-lg font-black text-slate-800">No device connected</Text>
             <Text className="text-xs text-slate-500 text-center px-4 font-medium">
-              Connect your Google Fit app or smartwatch to share your daily steps, heart rate, and rest live with your care circle.
+              Connect your Google Fit app or smartwatch to share your daily steps, heart rate, and
+              rest live with your care circle.
             </Text>
             <TouchableOpacity
               onPress={() => handleSelectDeviceToConnect('Google Fit')}
@@ -281,7 +293,9 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
         <View className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4 flex-row items-center gap-3">
           <ShieldCheck size={22} color="#059669" />
           <Text className="text-xs text-emerald-900 font-medium flex-1 leading-relaxed">
-            Google Fit updates automatically in the background. {context?.coordinatorName || 'Your family'} can view your live steps and activity from London.
+            Google Fit updates automatically in the background.{' '}
+            {context?.coordinatorName || 'Your family'} can view your live steps, BP, sleep, and
+            heart rate.
           </Text>
         </View>
       </View>
@@ -296,7 +310,10 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
         onRequestClose={() => setShowConnectModal(false)}
       >
         <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl p-6 space-y-5">
+          <View
+            style={{ maxWidth: 460, width: '100%', alignSelf: 'center' }}
+            className="bg-white rounded-t-3xl p-6 space-y-5"
+          >
             <View className="flex-row items-center justify-between pb-3 border-b border-slate-100">
               <Text className="text-lg font-black text-slate-900">
                 Choose health tracker or app
@@ -366,9 +383,7 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
                       </View>
                       <View>
                         <View className="flex-row items-center gap-1.5">
-                          <Text className="text-base font-bold text-slate-900">
-                            {item.name}
-                          </Text>
+                          <Text className="text-base font-bold text-slate-900">{item.name}</Text>
                           {item.recommended && (
                             <View className="bg-blue-100 px-2 py-0.5 rounded-full">
                               <Text className="text-[9px] font-bold text-[#007aff] uppercase">
@@ -377,9 +392,7 @@ export const ParentDevicesScreen: React.FC<ParentDevicesScreenProps> = ({ onBack
                             </View>
                           )}
                         </View>
-                        <Text className="text-xs text-slate-500 font-medium">
-                          {item.desc}
-                        </Text>
+                        <Text className="text-xs text-slate-500 font-medium">{item.desc}</Text>
                       </View>
                     </View>
                     <Text className="text-xs font-black text-[#007aff]">Connect</Text>

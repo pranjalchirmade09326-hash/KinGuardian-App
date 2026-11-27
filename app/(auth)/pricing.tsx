@@ -81,7 +81,16 @@ export default function PricingScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
         >
           <ChevronLeft size={20} color="#007aff" />
-          <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#007aff', alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              backgroundColor: '#007aff',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
             <Heart size={18} color="#ffffff" />
           </View>
           <Text style={{ fontSize: 18, fontWeight: '900', color: '#0f172a' }}>KinGuardian</Text>
@@ -90,36 +99,99 @@ export default function PricingScreen() {
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <TouchableOpacity
             onPress={() => router.push('/(auth)/sign-in')}
-            style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' }}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: '#e2e8f0'
+            }}
           >
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#1e293b' }}>Sign In</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/(auth)/sign-up')}
-            style={{ paddingHorizontal: 18, paddingVertical: 8, borderRadius: 10, backgroundColor: '#007aff' }}
+            style={{
+              paddingHorizontal: 18,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: '#007aff'
+            }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Start Free Trial</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+              Start Free Trial
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 80 }}>
         {/* Title */}
-        <View style={{ width: '100%', paddingVertical: 56, paddingHorizontal: 24, backgroundColor: '#f8fafc', alignItems: 'center' }}>
-          <Text style={{ fontSize: 12, fontWeight: '800', color: '#007aff', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
+        <View
+          style={{
+            width: '100%',
+            paddingVertical: 56,
+            paddingHorizontal: 24,
+            backgroundColor: '#f8fafc',
+            alignItems: 'center'
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '800',
+              color: '#007aff',
+              textTransform: 'uppercase',
+              letterSpacing: 1.5,
+              marginBottom: 12
+            }}
+          >
             Simple, Transparent NRI Pricing
           </Text>
-          <Text style={{ fontSize: 36, fontWeight: '900', color: '#0f172a', textAlign: 'center', maxWidth: 700, letterSpacing: -0.5 }}>
+          <Text
+            style={{
+              fontSize: 36,
+              fontWeight: '900',
+              color: '#0f172a',
+              textAlign: 'center',
+              maxWidth: 700,
+              letterSpacing: -0.5
+            }}
+          >
             Priceless peace of mind for less than the cost of a weekend dinner.
           </Text>
-          <Text style={{ fontSize: 15, color: '#475569', textAlign: 'center', maxWidth: 540, marginTop: 14 }}>
-            Try any plan free for 14 days. Cancel anytime with a single click. No hidden hardware fees.
+          <Text
+            style={{
+              fontSize: 15,
+              color: '#475569',
+              textAlign: 'center',
+              maxWidth: 540,
+              marginTop: 14
+            }}
+          >
+            Try any plan free for 14 days. Cancel anytime with a single click. No hidden hardware
+            fees.
           </Text>
         </View>
 
         {/* Pricing Cards */}
-        <View style={{ width: '100%', maxWidth: 1280, alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 64 }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 24, justifyContent: 'space-between' }}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth: 1280,
+            alignSelf: 'center',
+            paddingHorizontal: 24,
+            paddingVertical: 64
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 24,
+              justifyContent: 'space-between'
+            }}
+          >
             {plans.map((plan, idx) => (
               <View
                 key={idx}
@@ -138,19 +210,50 @@ export default function PricingScreen() {
                 }}
               >
                 {plan.popular && (
-                  <View style={{ position: 'absolute', top: -14, alignSelf: 'center', backgroundColor: '#007aff', paddingHorizontal: 16, paddingVertical: 4, borderRadius: 9999 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#ffffff', textTransform: 'uppercase' }}>Most Popular NRI Choice</Text>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -14,
+                      alignSelf: 'center',
+                      backgroundColor: '#007aff',
+                      paddingHorizontal: 16,
+                      paddingVertical: 4,
+                      borderRadius: 9999
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '800',
+                        color: '#ffffff',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      Most Popular NRI Choice
+                    </Text>
                   </View>
                 )}
 
-                <Text style={{ fontSize: 20, fontWeight: '900', color: '#0f172a' }}>{plan.name}</Text>
-                <Text style={{ fontSize: 13, color: '#64748b', marginTop: 6, minHeight: 40 }}>{plan.description}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: '#0f172a' }}>
+                  {plan.name}
+                </Text>
+                <Text style={{ fontSize: 13, color: '#64748b', marginTop: 6, minHeight: 40 }}>
+                  {plan.description}
+                </Text>
 
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 20 }}>
-                  <Text style={{ fontSize: 44, fontWeight: '900', color: '#0f172a' }}>{plan.price}</Text>
-                  <Text style={{ fontSize: 14, color: '#64748b', fontWeight: '600', marginLeft: 4 }}>{plan.period}</Text>
+                  <Text style={{ fontSize: 44, fontWeight: '900', color: '#0f172a' }}>
+                    {plan.price}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 14, color: '#64748b', fontWeight: '600', marginLeft: 4 }}
+                  >
+                    {plan.period}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600', marginTop: 2 }}>{plan.inr}</Text>
+                <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600', marginTop: 2 }}>
+                  {plan.inr}
+                </Text>
 
                 <TouchableOpacity
                   onPress={() => router.push('/(auth)/sign-up')}
@@ -164,17 +267,37 @@ export default function PricingScreen() {
                     alignItems: 'center'
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: plan.popular ? '#ffffff' : '#0f172a' }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '800',
+                      color: plan.popular ? '#ffffff' : '#0f172a'
+                    }}
+                  >
                     {plan.cta}
                   </Text>
                 </TouchableOpacity>
 
                 <View style={{ marginTop: 32, gap: 14 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' }}>Everything Included:</Text>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '800',
+                      color: '#94a3b8',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    Everything Included:
+                  </Text>
                   {plan.features.map((feat, fIdx) => (
-                    <View key={fIdx} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View
+                      key={fIdx}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                    >
                       <Check size={16} color="#16a34a" />
-                      <Text style={{ fontSize: 13, color: '#334155', fontWeight: '500', flex: 1 }}>{feat}</Text>
+                      <Text style={{ fontSize: 13, color: '#334155', fontWeight: '500', flex: 1 }}>
+                        {feat}
+                      </Text>
                     </View>
                   ))}
                 </View>

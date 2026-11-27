@@ -1,0 +1,10 @@
+node_modules/
+server/
+.expo/
+.expo-shared/
+dist/
+build/
+coverage/
+e2e/
+public/
+

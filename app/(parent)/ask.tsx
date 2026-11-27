@@ -6,6 +6,8 @@ import { DeviceFrame } from '../../src/components/DeviceFrame';
 import { SimulatorControls } from '../../src/components/SimulatorControls';
 import { useRouter } from 'expo-router';
 import { Mic, Volume2, Sparkles, HelpCircle } from 'lucide-react-native';
+import { CONFIG } from '../../src/constants/config';
+import { formatAIResponse } from '../../src/utils/aiFormatter';
 
 export default function ParentVoiceRoute() {
   const context = useContext(AppContext);
@@ -44,16 +46,39 @@ export default function ParentVoiceRoute() {
     }
   ];
 
-  const handleSelectPrompt = (txt: string, rep: string) => {
+  const handleSelectPrompt = async (txt: string, fallbackReply: string) => {
     setLoading(true);
     setTranscript(txt);
     setAiReply(null);
 
-    setTimeout(() => {
-      setLoading(false);
-      setAiReply(rep);
-      context.showToast('KinGuardian answered query.');
-    }, 800);
+    let replyText = fallbackReply;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(`${CONFIG.apiUrl}/api/v1/ai/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          query: txt,
+          patientName: context.primaryParentName || 'Parent',
+          currentBP: context.currentBP || '120/80 mmHg'
+        })
+      });
+      if (response.ok) {
+        const jsonRes = await response.json();
+        const formatted = formatAIResponse(jsonRes.data || jsonRes);
+        if (formatted.answer) replyText = formatted.answer;
+      }
+    } catch {
+      // Offline fallback uses simple parent-friendly reply
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    setLoading(false);
+    setAiReply(replyText);
+    context.showToast('KinGuardian answered query.');
   };
 
   const startRecord = () => {
@@ -64,17 +89,11 @@ export default function ParentVoiceRoute() {
 
     setTimeout(() => {
       setRecording(false);
-      setLoading(true);
-      setTranscript('What medicines do I take tonight?');
-
-      setTimeout(() => {
-        setLoading(false);
-        setAiReply(
-          'You have Metformin 500mg scheduled at 8:00 PM. Amlodipine was taken this morning.'
-        );
-        context.showToast('Answered voice query.');
-      }, 1000);
-    }, 3000);
+      handleSelectPrompt(
+        'What medicines do I take tonight?',
+        'You have Metformin 500mg scheduled at 8:00 PM. Amlodipine was taken this morning.'
+      );
+    }, 2500);
   };
 
   return (
@@ -83,7 +102,9 @@ export default function ParentVoiceRoute() {
         {/* Header */}
         <View className="bg-white pt-6 pb-5 px-6 border-b border-neutral-100 flex-row items-center justify-between">
           <View>
-            <Text className="text-xl font-bold text-neutral-900 tracking-tight">Ask KinGuardian</Text>
+            <Text className="text-xl font-bold text-neutral-900 tracking-tight">
+              Ask KinGuardian
+            </Text>
             <Text className="text-xs text-neutral-400 font-semibold mt-0.5">
               Press to speak or select a quick question below
             </Text>
@@ -131,7 +152,6 @@ export default function ParentVoiceRoute() {
                 )}
               </View>
             ) : (
-
               <View className="items-center py-4 space-y-2">
                 <Text className="text-base font-bold text-neutral-800 text-center leading-relaxed">
                   How can I help you today, Dad?

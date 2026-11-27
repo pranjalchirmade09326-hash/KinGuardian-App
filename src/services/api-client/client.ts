@@ -35,7 +35,6 @@ import {
 } from './types';
 import { CONFIG } from '../../constants/config';
 
-
 export class DrGodlyApiError extends Error {
   public readonly code: string;
   public readonly requestId: string;
@@ -103,7 +102,7 @@ export class DrGodlyApiClient {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-Request-ID': this.generateUUID(),
       ...options.customHeaders
     };
@@ -166,8 +165,7 @@ export class DrGodlyApiClient {
   public readonly families = {
     getDashboard: (familyId: UUID) =>
       this.request<any>('GET', `/api/v1/families/${familyId}/dashboard`),
-    getHome: (familyId: UUID) =>
-      this.request<any>('GET', `/api/v1/families/${familyId}/home`),
+    getHome: (familyId: UUID) => this.request<any>('GET', `/api/v1/families/${familyId}/home`),
     listMembers: (familyId: UUID) =>
       this.request<FamilyMembership[]>('GET', `/api/v1/families/${familyId}/members`)
   };
@@ -194,13 +192,17 @@ export class DrGodlyApiClient {
 
   public readonly checkins = {
     submit: (req: WellbeingCheckinCreate, idempotencyKey?: string) =>
-      this.request<WellbeingCheckinResponse>('POST', `/api/v1/subjects/${req.subject_id}/check-ins`, {
-        body: {
-          feeling: req.feeling,
-          notes: req.notes
-        },
-        idempotencyKey
-      })
+      this.request<WellbeingCheckinResponse>(
+        'POST',
+        `/api/v1/subjects/${req.subject_id}/check-ins`,
+        {
+          body: {
+            feeling: req.feeling,
+            notes: req.notes
+          },
+          idempotencyKey
+        }
+      )
   };
 
   public readonly careTasks = {
@@ -230,8 +232,7 @@ export class DrGodlyApiClient {
 
   // Milestone M2: Users Profile Endpoints
   public readonly users = {
-    get: (id: UUID) =>
-      this.request<ApiResponse<UserProfile>>('GET', `/api/v1/users/${id}`),
+    get: (id: UUID) => this.request<ApiResponse<UserProfile>>('GET', `/api/v1/users/${id}`),
 
     update: (id: UUID, data: UserUpdateInput) =>
       this.request<ApiResponse<UserProfile>>('PATCH', `/api/v1/users/${id}`, {
@@ -256,8 +257,7 @@ export class DrGodlyApiClient {
       });
     },
 
-    delete: (id: UUID) =>
-      this.request<void>('DELETE', `/api/v1/users/${id}`)
+    delete: (id: UUID) => this.request<void>('DELETE', `/api/v1/users/${id}`)
   };
 
   // Milestone M2: Emergency Contacts Endpoints
@@ -271,16 +271,14 @@ export class DrGodlyApiClient {
         idempotencyKey
       }),
 
-    get: (id: UUID) =>
-      this.request<ApiResponse<EmergencyContact>>('GET', `/api/v1/contacts/${id}`),
+    get: (id: UUID) => this.request<ApiResponse<EmergencyContact>>('GET', `/api/v1/contacts/${id}`),
 
     update: (id: UUID, data: EmergencyContactUpdate) =>
       this.request<ApiResponse<EmergencyContact>>('PATCH', `/api/v1/contacts/${id}`, {
         body: data
       }),
 
-    delete: (id: UUID) =>
-      this.request<void>('DELETE', `/api/v1/contacts/${id}`)
+    delete: (id: UUID) => this.request<void>('DELETE', `/api/v1/contacts/${id}`)
   };
 
   // Milestone M2: Alerts & Incidents Endpoints
@@ -318,8 +316,7 @@ export class DrGodlyApiClient {
         idempotencyKey
       }),
 
-    get: (id: UUID) =>
-      this.request<ApiResponse<AlertIncident>>('GET', `/api/v1/alerts/${id}`),
+    get: (id: UUID) => this.request<ApiResponse<AlertIncident>>('GET', `/api/v1/alerts/${id}`),
 
     acknowledge: (id: UUID, data: AcknowledgeAlertInput) =>
       this.request<ApiResponse<AlertIncident>>('PATCH', `/api/v1/alerts/${id}/acknowledge`, {
@@ -331,8 +328,7 @@ export class DrGodlyApiClient {
         body: data
       }),
 
-    delete: (id: UUID) =>
-      this.request<void>('DELETE', `/api/v1/alerts/${id}`)
+    delete: (id: UUID) => this.request<void>('DELETE', `/api/v1/alerts/${id}`)
   };
 }
 

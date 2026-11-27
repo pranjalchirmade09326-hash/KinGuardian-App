@@ -51,7 +51,10 @@ export const SimulatorControls: React.FC<SimulatorControlsProps> = ({
       label: '4. Proxy Insight',
       desc: 'Coordinator gets push notification and red warning dashboard card.'
     },
-    { label: '5. Proxy Action', desc: 'Coordinator goes to care channel to alert caregiver Suresh.' },
+    {
+      label: '5. Proxy Action',
+      desc: 'Coordinator goes to care channel to alert caregiver Suresh.'
+    },
     {
       label: '6. Nurse Response',
       desc: 'Suresh checks parent, gives fluids, and logs verification.'
@@ -136,7 +139,6 @@ export const SimulatorControls: React.FC<SimulatorControlsProps> = ({
                 <Text className="text-white text-xs font-black">Launch</Text>
               </TouchableOpacity>
             </View>
-
           ) : (
             <View className="space-y-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800/80">
               <View className="flex-row justify-between items-center text-[10px] font-black text-[#f59e0b] uppercase tracking-wide">

@@ -18,8 +18,13 @@ import {
 } from 'lucide-react-native';
 import { openWhatsApp, WhatsAppTemplates } from '../utils/whatsapp';
 import { HealthObservation, Person } from '../types';
-import { formatTimeForCoordinator } from '../utils/timezone';
+import {
+  formatTimeForCoordinator,
+  getTimezoneForLocation,
+  formatLiveClock
+} from '../utils/timezone';
 import { AppContext } from '../store/AppContext';
+import { AuthContext } from '../store/AuthContext';
 import { RAMESH_USER_ID } from '../store/AuthProvider';
 
 interface HealthDashboardProps {
@@ -61,29 +66,53 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 }) => {
   const router = useRouter();
   const context = useContext(AppContext);
+  const auth = useContext(AuthContext);
+  const authUser = auth?.user;
   const [actingAlertId, setActingAlertId] = useState<string | null>(null);
+  const [now, setNow] = useState<Date>(() => new Date());
 
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const coordinatorTz = getTimezoneForLocation(authUser?.city, authUser?.country);
+  const parentTz = getTimezoneForLocation(people[0]?.city, people[0]?.country || 'India');
+  const coordinatorLiveTime = formatLiveClock(now, coordinatorTz);
+  const parentLiveTime = formatLiveClock(now, parentTz);
+
+  const parentMembers = people.filter((p) => {
+    const rel = (p.relationship || p.relation || '').toLowerCase();
+    return (
+      p.id === 'dad' ||
+      p.id === 'mom' ||
+      ['father', 'mother', 'dad', 'mom', 'parent', 'papa', 'mummy', 'grandfather', 'grandmother'].some(
+        (role) => rel.includes(role)
+      )
+    );
+  });
   const bpSystolic = parseInt(currentBP.split('/')[0] || '120', 10);
-  const needsAttention = bpSystolic >= 140;
-  const dad = people.find((p) => p.id === 'dad') || people[0];
-  const mom = people.find((p) => p.id === 'mom') || people[1];
+  const needsAttention = bpSystolic >= 140 && parentMembers.length > 0;
+  const dad = parentMembers.find((p) => p.id === 'dad') || parentMembers[0];
 
   // Automatic vital spike detection and persistence to POST /api/v1/alerts
   useEffect(() => {
-    if (bpSystolic >= 140 && context) {
+    if (bpSystolic >= 140 && context && people.length > 0) {
       const alreadyTriggered = context.activeAlerts?.some(
         (a) => a.type === 'bp_spike' && a.status !== 'resolved'
       );
       if (!alreadyTriggered) {
-        context.createAlert({
-          userId: RAMESH_USER_ID,
-          type: 'bp_spike',
-          severity: 'high',
-          description: `Blood pressure systolic spike detected: ${currentBP} mmHg`,
-          metadata: { systolic: bpSystolic, currentBP }
-        }).catch((err) => {
-          console.warn('HealthDashboard: Automatic alert logging offline fallback:', err);
-        });
+        context
+          .createAlert({
+            userId: RAMESH_USER_ID,
+            type: 'bp_spike',
+            severity: 'high',
+            description: `Blood pressure systolic spike detected: ${currentBP} mmHg`,
+            metadata: { systolic: bpSystolic, currentBP }
+          })
+          .catch((err) => {
+            console.warn('HealthDashboard: Automatic alert logging offline fallback:', err);
+          });
       }
     }
   }, [bpSystolic, currentBP, context]);
@@ -114,9 +143,9 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 
   // Dynamic feeling mapping
   let feelingText = 'Good';
-  if (dad.currentStatus?.toLowerCase().includes('tired')) {
+  if (dad?.currentStatus?.toLowerCase().includes('tired')) {
     feelingText = 'Okay';
-  } else if (dad.currentStatus?.toLowerCase().includes('unwell')) {
+  } else if (dad?.currentStatus?.toLowerCase().includes('unwell')) {
     feelingText = 'Not well';
   }
 
@@ -157,16 +186,19 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
           </View>
         </View>
 
-        {/* Location Translation Pills */}
-        <View className="flex-row items-center gap-2.5">
+        {/* Location Translation Pills (with Live Ticking Timezones) */}
+        <View className="flex-row items-center gap-2.5 flex-wrap">
           <View className="flex-row items-center gap-1.5 bg-[#eff6ff] px-3.5 py-1.5 rounded-full">
             <MapPin size={10} color="#007aff" />
-            <Text className="text-[10px] font-semibold text-[#007aff]">You — London (BST)</Text>
+            <Text className="text-[10px] font-semibold text-[#007aff]">
+              You — {authUser?.city || 'Your City'}
+              {authUser?.country ? ` (${authUser.country})` : ''} • {coordinatorLiveTime}
+            </Text>
           </View>
           <View className="flex-row items-center gap-1.5 bg-[#eefdf4] px-3.5 py-1.5 rounded-full">
             <MapPin size={10} color="#34c759" />
             <Text className="text-[10px] font-semibold text-[#34c759]">
-              Parents — Chennai (IST)
+              Parents — {people.length > 0 ? people[0].city || 'India' : 'India'} • {parentLiveTime}
             </Text>
           </View>
         </View>
@@ -187,8 +219,8 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                 const borderColor = isCritical
                   ? 'border-[#ff3b30]'
                   : isHigh
-                  ? 'border-[#ff9500]'
-                  : 'border-[#007aff]';
+                    ? 'border-[#ff9500]'
+                    : 'border-[#007aff]';
                 const isTriggered = alertItem.status === 'triggered';
                 const isActing = actingAlertId === alertItem.id;
 
@@ -446,7 +478,11 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                 onPress={() => {
                   openWhatsApp({
                     phone: '9270756299',
-                    text: WhatsAppTemplates.emergencyAlert(context?.primaryParentName || 'Dad', 'Blood Pressure', `${currentBP} mmHg`)
+                    text: WhatsAppTemplates.emergencyAlert(
+                      context?.primaryParentName || 'Dad',
+                      'Blood Pressure',
+                      `${currentBP} mmHg`
+                    )
                   });
                 }}
                 className="w-full bg-[#25D366] py-2.5 rounded-2xl flex-row items-center justify-center gap-2 active:opacity-90"
@@ -455,6 +491,29 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                 <Text className="text-white text-xs font-bold uppercase tracking-wider">
                   Notify Family via WhatsApp
                 </Text>
+              </TouchableOpacity>
+            </View>
+          ) : parentMembers.length === 0 ? (
+            /* New Account Onboarding / Empty State Card */
+            <View className="bg-white rounded-2xl p-5 shadow-sm shadow-neutral-100 space-y-3 border-l-4 border-[#007aff]">
+              <View className="flex-row items-center gap-2">
+                <Sparkles size={15} color="#007aff" />
+                <Text className="text-xs font-bold text-[#007aff]">Ready to Get Started</Text>
+              </View>
+              <View className="space-y-1">
+                <Text className="text-sm font-bold text-neutral-900">
+                  Connect your parents to start monitoring.
+                </Text>
+                <Text className="text-xs text-neutral-500 leading-normal">
+                  Add your father or mother's profile in India to track vitals, medications, and WhatsApp check-ins.
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push('/(coordinator)/parents')}
+                activeOpacity={0.85}
+                className="bg-[#007aff] py-2.5 px-4 rounded-xl self-start"
+              >
+                <Text className="text-white text-xs font-bold">+ Add Your First Parent</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -470,7 +529,7 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                   “Nothing needs your attention right now.”
                 </Text>
                 <Text className="text-xs text-neutral-400 leading-normal">
-                  Mom and Dad's recent information looks consistent with their usual patterns.
+                  {parentMembers.map((p) => p.name.split(' ')[0]).join(' and ')}'s recent information looks consistent with their usual patterns.
                 </Text>
               </View>
 
@@ -488,47 +547,65 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 
         {/* Parents Profiles Focus Switcher */}
         <View className="space-y-2">
-          <Text className="text-xs font-bold text-neutral-400 uppercase tracking-wider pl-1">
-            Family Members
-          </Text>
+          <View className="flex-row items-center justify-between px-1">
+            <Text className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+              Family Members
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/(coordinator)/parents')}>
+              <Text className="text-xs font-bold text-[#007aff]">+ Add Parent</Text>
+            </TouchableOpacity>
+          </View>
           <View className="space-y-2">
-            {/* Dad Profile Card */}
-            <TouchableOpacity
-              onPress={() => onViewVitalDetail('bp')}
-              className="bg-white rounded-2xl p-4 flex-row items-center justify-between shadow-sm shadow-neutral-100 active:scale-98"
-            >
-              <View className="flex-row items-center gap-3.5">
-                <Image source={{ uri: dad.avatarUrl }} className="w-10 h-10 rounded-full" />
-                <View className="space-y-0.5">
-                  <Text className="text-sm font-bold text-neutral-900">{dad.name}</Text>
-                  <Text className="text-[10px] font-semibold text-[#34c759]">
-                    Doing well • Vitals stable
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={16} color="#8e8e93" />
-            </TouchableOpacity>
-
-            {/* Mom Profile Card */}
-            <TouchableOpacity
-              onPress={() => onViewVitalDetail('glucose')}
-              className="bg-white rounded-2xl p-4 flex-row items-center justify-between shadow-sm shadow-neutral-100 active:scale-98"
-            >
-              <View className="flex-row items-center gap-3.5">
-                <Image source={{ uri: mom.avatarUrl }} className="w-10 h-10 rounded-full" />
-                <View className="space-y-0.5">
-                  <Text className="text-sm font-bold text-neutral-900">{mom.name}</Text>
-                  <Text className="text-[10px] font-semibold text-[#34c759]">
-                    Doing well • Vitals stable
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={16} color="#8e8e93" />
-            </TouchableOpacity>
+            {parentMembers.length === 0 ? (
+              <TouchableOpacity
+                onPress={() => router.push('/(coordinator)/parents')}
+                activeOpacity={0.85}
+                className="bg-white rounded-2xl p-5 border border-dashed border-neutral-300 items-center justify-center space-y-1.5"
+              >
+                <Text className="text-sm font-bold text-neutral-800">No family members added yet</Text>
+                <Text className="text-xs text-neutral-400 text-center">
+                  Tap here to add your parents and start monitoring
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              parentMembers.map((person) => (
+                <TouchableOpacity
+                  key={person.id}
+                  onPress={() => {
+                    context?.setCurrentPersonId(person.id);
+                    router.push(`/(coordinator)/parent/${person.id}`);
+                  }}
+                  className="bg-white rounded-2xl p-4 flex-row items-center justify-between shadow-sm shadow-neutral-100 active:scale-98"
+                >
+                  <View className="flex-row items-center gap-3.5">
+                    <Image
+                      source={{
+                        uri:
+                          person.avatarUrl ||
+                          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=256'
+                      }}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <View className="space-y-0.5">
+                      <Text className="text-sm font-bold text-neutral-900">{person.name}</Text>
+                      <Text className="text-[10px] font-semibold text-[#34c759]">
+                        {person.wellbeingStatus === 'attention'
+                          ? 'Needs attention'
+                          : 'Doing well • Vitals stable'}
+                        {person.city ? ` • ${person.city}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={16} color="#8e8e93" />
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         </View>
 
         {/* Today's Care Checklist */}
+        {people.length > 0 && (
+        <>
         <View className="space-y-2">
           <Text className="text-xs font-bold text-neutral-400 uppercase tracking-wider pl-1">
             Today's Care tasks
@@ -619,7 +696,7 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                   <Text className="text-xs font-bold text-neutral-850">Dad checked in</Text>
                 </View>
                 <Text className="text-[10px] text-neutral-400 font-bold uppercase">
-                  {formatTimeForCoordinator('2026-08-19T20:05:00+05:30')}
+                  {formatTimeForCoordinator(new Date(Date.now() - 3600000).toISOString())}
                 </Text>
               </View>
 
@@ -678,6 +755,8 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
             </View>
           </View>
         </View>
+        </>
+        )}
 
         {/* Quick Actions Action Grid */}
         <View className="space-y-2 mb-12">

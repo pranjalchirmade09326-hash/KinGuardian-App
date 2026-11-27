@@ -15,7 +15,8 @@ export const ERROR_CODES_TAXONOMY: Record<string, ErrorCodeMetadata> = {
     code: 'FAMILY_NOT_FOUND',
     httpStatus: 404,
     userMessage: 'The requested family care circle was not found.',
-    actionableResolution: 'Verify your invitation link or select a different care circle from your profile.'
+    actionableResolution:
+      'Verify your invitation link or select a different care circle from your profile.'
   },
   SUBJECT_NOT_FOUND: {
     code: 'SUBJECT_NOT_FOUND',
@@ -32,7 +33,8 @@ export const ERROR_CODES_TAXONOMY: Record<string, ErrorCodeMetadata> = {
   CONSENT_REQUIRED: {
     code: 'CONSENT_REQUIRED',
     httpStatus: 403,
-    userMessage: 'Explicit patient or coordinator consent is required to view these clinical records.',
+    userMessage:
+      'Explicit patient or coordinator consent is required to view these clinical records.',
     actionableResolution: 'Navigate to the Consent Governance tab to grant health record access.'
   },
   CONSENT_EXPIRED: {
@@ -87,7 +89,8 @@ export const ERROR_CODES_TAXONOMY: Record<string, ErrorCodeMetadata> = {
     code: 'CIRCUIT_BREAKER_OPEN',
     httpStatus: 503,
     userMessage: 'Clinical backend service is temporarily experiencing high latency.',
-    actionableResolution: 'Operating in degraded mode with cached data. Live sync will resume automatically.'
+    actionableResolution:
+      'Operating in degraded mode with cached data. Live sync will resume automatically.'
   },
   INTERNAL_SERVER_ERROR: {
     code: 'INTERNAL_SERVER_ERROR',

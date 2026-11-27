@@ -40,7 +40,8 @@ export interface FamilyMembership {
   id: UUID;
   family_id: UUID;
   profile_id: UUID;
-  membership_role: 'primary_coordinator' | 'secondary_coordinator' | 'elder_parent' | 'family_viewer';
+  membership_role:
+    'primary_coordinator' | 'secondary_coordinator' | 'elder_parent' | 'family_viewer';
   status: 'active' | 'inactive';
   joined_at: ISODateTime;
 }
@@ -251,16 +252,7 @@ export interface ApiResponse<T = any> {
 // User Profiles
 export type BackendUserRole = 'coordinator' | 'parent' | 'caregiver' | 'doctor';
 
-export type BloodGroup =
-  | 'A+'
-  | 'A-'
-  | 'B+'
-  | 'B-'
-  | 'AB+'
-  | 'AB-'
-  | 'O+'
-  | 'O-'
-  | 'Unknown';
+export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'Unknown';
 
 export interface UserProfile {
   id: string;
@@ -342,12 +334,7 @@ export type AlertType =
 
 export type AlertSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
-export type AlertStatus =
-  | 'triggered'
-  | 'acknowledged'
-  | 'dispatched'
-  | 'resolved'
-  | 'false_alarm';
+export type AlertStatus = 'triggered' | 'acknowledged' | 'dispatched' | 'resolved' | 'false_alarm';
 
 export interface LocationCoords {
   latitude: number;
@@ -400,5 +387,3 @@ export interface AcknowledgeAlertInput {
 export interface ResolveAlertInput {
   resolution_notes: string;
 }
-
-

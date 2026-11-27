@@ -51,11 +51,16 @@ export interface UpdateProfilePayload {
 }
 
 export interface AuthContextType extends AuthState {
-  signIn: (email: string, password: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
   signUp: (payload: SignUpPayload) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   quickSignIn: (role: UserRole) => Promise<void>;
-  updateProfile: (data: UpdateProfilePayload) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
+  updateProfile: (
+    data: UpdateProfilePayload
+  ) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
   refreshProfile: () => Promise<void>;
   clearError: () => void;
 }

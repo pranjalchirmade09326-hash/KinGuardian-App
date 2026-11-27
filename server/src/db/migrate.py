@@ -27,6 +27,7 @@ async def run_migrations() -> list[str]:
         config.database_url, row_factory=dict_row
     ) as conn:
         async with conn.transaction():
+            await conn.execute("SELECT pg_advisory_xact_lock(72819402)")
             await conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -46,7 +47,7 @@ async def run_migrations() -> list[str]:
                     sql = file_path.read_text(encoding="utf-8")
                     await conn.execute(sql)
                     await conn.execute(
-                        "INSERT INTO schema_migrations (name) VALUES (%s)",
+                        "INSERT INTO schema_migrations (name) VALUES (%s) ON CONFLICT (name) DO NOTHING",
                         [file_path.name],
                     )
                     applied_migrations.append(file_path.name)

@@ -85,7 +85,9 @@ export const SyncDashboard: React.FC<SyncDashboardProps> = ({
               <Text className="text-base font-bold text-neutral-800 mt-0.5">
                 {londonTime || '--:-- --'}
               </Text>
-              <Text className="text-[9px] text-neutral-400 mt-0.5 font-semibold">{context?.coordinatorName || 'Coordinator'} (You)</Text>
+              <Text className="text-[9px] text-neutral-400 mt-0.5 font-semibold">
+                {context?.coordinatorName || 'Coordinator'} (You)
+              </Text>
             </View>
 
             <View className="flex-1 bg-neutral-50 p-4 rounded-xl items-center border border-neutral-100">
@@ -96,7 +98,9 @@ export const SyncDashboard: React.FC<SyncDashboardProps> = ({
               <Text className="text-base font-bold text-neutral-800 mt-0.5">
                 {chennaiTime || '--:-- --'}
               </Text>
-              <Text className="text-[9px] text-neutral-400 mt-0.5 font-semibold">{context?.primaryParentName || 'Dad'} (Dad)</Text>
+              <Text className="text-[9px] text-neutral-400 mt-0.5 font-semibold">
+                {context?.primaryParentName || 'Dad'} (Dad)
+              </Text>
             </View>
           </View>
         </View>

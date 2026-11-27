@@ -28,7 +28,8 @@ import {
   ListAlertsQuery
 } from '../types';
 import { apiClient } from '../services/api-client/client';
-import { RAMESH_USER_ID } from './AuthProvider';
+import { CONFIG } from '../constants/config';
+import { ANJALI_USER_ID, RAMESH_USER_ID } from './AuthProvider';
 import {
   INITIAL_PEOPLE,
   INITIAL_OBSERVATIONS,
@@ -56,6 +57,24 @@ function generateUUID(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function postCareApi(path: string, method: 'POST' | 'PATCH', body?: Record<string, any>) {
+  try {
+    const res = await fetch(`${CONFIG.apiUrl}/api/v1${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn(`Care API sync (${method} ${path}) offline fallback:`, err);
+  }
+  return null;
 }
 
 const INITIAL_EMERGENCY_CONTACTS: EmergencyContact[] = [
@@ -204,6 +223,12 @@ const DEFAULT_AI_INSIGHTS: AIInsight[] = [
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useContext(AuthContext);
   const user = auth?.user;
+  const isDemoAccount =
+    !user ||
+    user.id === ANJALI_USER_ID ||
+    user.id === RAMESH_USER_ID ||
+    user.email?.toLowerCase() === 'anjali@kinguardian.com' ||
+    user.email?.toLowerCase() === 'ramesh@kinguardian.com';
 
   const [currentUser, setCurrentUser] = useState<DemoUser>(DEMO_USERS[0]);
   const [consentApproved, setConsentApproved] = useState<boolean>(true);
@@ -238,24 +263,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [appMode, setAppMode] = useState<'coordinator' | 'parent'>('coordinator');
 
-  // Data States
-  const [people, setPeople] = useState<Person[]>(INITIAL_PEOPLE);
-  const primaryParent = people.find(
-    (p) => p.relationship?.toLowerCase().includes('father') || p.id === 'dad'
-  ) || people[0];
-  const secondaryParent = people.find(
-    (p) => p.relationship?.toLowerCase().includes('mother') || p.id === 'mom'
-  ) || people[1];
+  // Data States (default empty; demo data is hydrated only for demo accounts)
+  const [people, setPeople] = useState<Person[]>([]);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
+  const primaryParent =
+    people.find((p) => p.relationship?.toLowerCase().includes('father') || p.id === 'dad') ||
+    people[0];
+  const secondaryParent =
+    people.find((p) => p.relationship?.toLowerCase().includes('mother') || p.id === 'mom') ||
+    people[1];
 
   const primaryParentName =
     user?.role === 'parent' && user?.name
       ? user.name.split(' ')[0] || user.name
-      : (primaryParent?.name?.split(' ')[0] || 'Ramesh');
+      : primaryParent?.name?.split(' ')[0] || 'Ramesh';
   const secondaryParentName = secondaryParent?.name?.split(' ')[0] || 'Lakshmi';
-  const coordinatorName =
-    user?.role === 'coordinator' && user?.name
-      ? user.name
-      : 'Anjali';
+  const coordinatorName = user?.role === 'coordinator' && user?.name ? user.name : 'Anjali';
 
   const getPersonName = (personId: string) => {
     const found = people.find((p) => p.id === personId);
@@ -362,48 +385,129 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [aiInsights, setAiInsights] = useState<AIInsight[]>(DEFAULT_AI_INSIGHTS);
 
   // Milestone M2: Emergency Contacts & Live Alerts State
-  const [emergencyContacts, setEmergencyContacts] =
-    useState<EmergencyContact[]>(INITIAL_EMERGENCY_CONTACTS);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [activeAlerts, setActiveAlerts] = useState<AlertIncident[]>([]);
 
-  // Load state on mount
+  // Load state when authenticated user changes
   useEffect(() => {
+    let cancelled = false;
     const loadState = async () => {
       try {
-        const storedScenario = await AsyncStorage.getItem('kinguardian_scenario');
+        if (!user) {
+          setLoadedUserId(null);
+          return;
+        }
+
+        if (!isDemoAccount) {
+          // Real / newly created user account: strictly isolate from demo data
+          const DEMO_PERSON_IDS = new Set(['dad', 'mom', 'anjali', 'rahul', 'priya']);
+          const prefix = `@kinguardian_${user.id}_`;
+          const [
+            storedPeople,
+            storedMeds,
+            storedNotifs,
+            storedTasks,
+            storedRecords,
+            storedContacts,
+            storedAlerts
+          ] = await Promise.all([
+            AsyncStorage.getItem(`${prefix}people`),
+            AsyncStorage.getItem(`${prefix}medications`),
+            AsyncStorage.getItem(`${prefix}notifications`),
+            AsyncStorage.getItem(`${prefix}tasks`),
+            AsyncStorage.getItem(`${prefix}records`),
+            AsyncStorage.getItem(`${prefix}contacts`),
+            AsyncStorage.getItem(`${prefix}alerts`)
+          ]);
+
+          if (cancelled) return;
+
+          const rawPeople: Person[] = storedPeople ? JSON.parse(storedPeople) : [];
+          const cleanPeople = rawPeople
+            .filter((p) => !DEMO_PERSON_IDS.has(p.id))
+            .map((p) => ({
+              ...p,
+              name: p.name ? p.name.replace(/\\/g, '').trim() : p.name
+            }));
+          setPeople(cleanPeople);
+          setCurrentPersonId(cleanPeople[0]?.id || '');
+          setMedications(storedMeds ? JSON.parse(storedMeds) : []);
+          setNotifications(storedNotifs ? JSON.parse(storedNotifs) : []);
+          setCareTasks(storedTasks ? JSON.parse(storedTasks) : []);
+          setRecords(storedRecords ? JSON.parse(storedRecords) : []);
+          const rawContacts: EmergencyContact[] = storedContacts ? JSON.parse(storedContacts) : [];
+          const DEMO_CONTACT_EMAILS = new Set([
+            'priya.care@kinguardian.com',
+            'anjali@kinguardian.com',
+            'rahul@kinguardian.com'
+          ]);
+          const DEMO_CONTACT_IDS = new Set([
+            '10000000-0000-4000-8000-000000000001',
+            '10000000-0000-4000-8000-000000000002',
+            '10000000-0000-4000-8000-000000000003'
+          ]);
+          const cleanContacts = rawContacts
+            .filter(
+              (c) =>
+                !DEMO_CONTACT_IDS.has(c.id) &&
+                (!c.email || !DEMO_CONTACT_EMAILS.has(c.email.toLowerCase()))
+            )
+            .map((c) => ({
+              ...c,
+              name: c.name ? c.name.replace(/\\/g, '').trim() : c.name
+            }));
+          setEmergencyContacts(cleanContacts);
+          setActiveAlerts(storedAlerts ? JSON.parse(storedAlerts) : []);
+          setAiInsights([]);
+          setChatMessages([]);
+          setCurrentBP('120/80 mmHg');
+          setCurrentScenario('normal');
+          setLoadedUserId(user.id);
+          return;
+        }
+
+        // Demo account (Anjali / Ramesh) — strictly isolated from real user accounts
+        const storedScenario = await AsyncStorage.getItem('kinguardian_demo_scenario_v2');
         if (storedScenario) setCurrentScenario(storedScenario as any);
 
-        const storedBP = await AsyncStorage.getItem('kinguardian_bp');
+        const storedBP = await AsyncStorage.getItem('kinguardian_demo_bp_v2');
         if (storedBP) setCurrentBP(storedBP);
 
-        const storedPeople = await AsyncStorage.getItem('kinguardian_people');
-        if (storedPeople) setPeople(JSON.parse(storedPeople));
+        const storedPeople = await AsyncStorage.getItem('kinguardian_demo_people_v2');
+        setPeople(storedPeople ? JSON.parse(storedPeople) : INITIAL_PEOPLE);
+        setCurrentPersonId('dad');
 
-        const storedMeds = await AsyncStorage.getItem('kinguardian_medications');
-        if (storedMeds) setMedications(JSON.parse(storedMeds));
+        const storedMeds = await AsyncStorage.getItem('kinguardian_demo_medications_v2');
+        setMedications(storedMeds ? JSON.parse(storedMeds) : DEFAULT_MEDICATIONS);
 
-        const storedNotifs = await AsyncStorage.getItem('kinguardian_notifications');
-        if (storedNotifs) setNotifications(JSON.parse(storedNotifs));
+        const storedNotifs = await AsyncStorage.getItem('kinguardian_demo_notifications_v2');
+        setNotifications(storedNotifs ? JSON.parse(storedNotifs) : INITIAL_NOTIFICATIONS);
 
-        const storedTasks = await AsyncStorage.getItem('kinguardian_tasks');
-        if (storedTasks) setCareTasks(JSON.parse(storedTasks));
+        const storedTasks = await AsyncStorage.getItem('kinguardian_demo_tasks_v2');
+        setCareTasks(storedTasks ? JSON.parse(storedTasks) : DEFAULT_CARE_TASKS);
 
-        const storedRecords = await AsyncStorage.getItem('kinguardian_records');
-        if (storedRecords) setRecords(JSON.parse(storedRecords));
+        const storedRecords = await AsyncStorage.getItem('kinguardian_demo_records_v2');
+        setRecords(storedRecords ? JSON.parse(storedRecords) : INITIAL_HEALTH_RECORDS);
 
-        // Load persisted emergency contacts
-        const storedContacts = await AsyncStorage.getItem('kinguardian_contacts');
+        // Load persisted emergency contacts for demo
+        const storedContacts = await AsyncStorage.getItem('kinguardian_demo_contacts_v2');
         if (storedContacts) {
           try {
             const parsed = JSON.parse(storedContacts);
             if (Array.isArray(parsed) && parsed.length > 0) {
               setEmergencyContacts(parsed);
+            } else {
+              setEmergencyContacts(INITIAL_EMERGENCY_CONTACTS);
             }
-          } catch {}
+          } catch {
+            setEmergencyContacts(INITIAL_EMERGENCY_CONTACTS);
+          }
+        } else {
+          setEmergencyContacts(INITIAL_EMERGENCY_CONTACTS);
         }
 
-        // Load persisted alerts
-        const storedAlerts = await AsyncStorage.getItem('kinguardian_alerts');
+        // Load persisted alerts for demo
+        const storedAlerts = await AsyncStorage.getItem('kinguardian_demo_alerts_v2');
         if (storedAlerts) {
           try {
             const parsed = JSON.parse(storedAlerts);
@@ -411,16 +515,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               setActiveAlerts(parsed);
             }
           } catch {}
-        }
-
-        // Sync live subjects from database if available
-        try {
-          const liveMembers = await familyService.getFamilyMembers();
-          if (liveMembers && liveMembers.length > 0) {
-            setPeople(liveMembers);
-          }
-        } catch (apiErr) {
-          console.warn('Could not sync live family members on mount:', apiErr);
         }
 
         // Background sync emergency contacts with backend REST API
@@ -433,7 +527,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           })
           .catch((err) => {
-            console.warn('AppProvider: Backend contacts sync offline fallback:', err?.message || err);
+            console.warn(
+              'AppProvider: Backend contacts sync offline fallback:',
+              err?.message || err
+            );
           });
 
         // Background sync alerts with backend REST API
@@ -448,32 +545,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .catch((err) => {
             console.warn('AppProvider: Backend alerts sync offline fallback:', err?.message || err);
           });
+
+        if (!cancelled) setLoadedUserId(user.id);
       } catch (err) {
         console.warn('Failed to load persisted offline state:', err);
       }
     };
     loadState();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, isDemoAccount]);
 
-  // Save state on changes
+  // Save state on changes (only after current user's state has finished hydrating)
   useEffect(() => {
     const saveState = async () => {
       try {
-        await AsyncStorage.setItem('kinguardian_scenario', currentScenario);
-        await AsyncStorage.setItem('kinguardian_bp', currentBP);
-        await AsyncStorage.setItem('kinguardian_people', JSON.stringify(people));
-        await AsyncStorage.setItem('kinguardian_medications', JSON.stringify(medications));
-        await AsyncStorage.setItem('kinguardian_notifications', JSON.stringify(notifications));
-        await AsyncStorage.setItem('kinguardian_tasks', JSON.stringify(careTasks));
-        await AsyncStorage.setItem('kinguardian_records', JSON.stringify(records));
-        await AsyncStorage.setItem('kinguardian_contacts', JSON.stringify(emergencyContacts));
-        await AsyncStorage.setItem('kinguardian_alerts', JSON.stringify(activeAlerts));
+        if (!user || loadedUserId !== user.id) return;
+
+        if (!isDemoAccount) {
+          const prefix = `@kinguardian_${user.id}_`;
+          await Promise.all([
+            AsyncStorage.setItem(`${prefix}people`, JSON.stringify(people)),
+            AsyncStorage.setItem(`${prefix}medications`, JSON.stringify(medications)),
+            AsyncStorage.setItem(`${prefix}notifications`, JSON.stringify(notifications)),
+            AsyncStorage.setItem(`${prefix}tasks`, JSON.stringify(careTasks)),
+            AsyncStorage.setItem(`${prefix}records`, JSON.stringify(records)),
+            AsyncStorage.setItem(`${prefix}contacts`, JSON.stringify(emergencyContacts)),
+            AsyncStorage.setItem(`${prefix}alerts`, JSON.stringify(activeAlerts))
+          ]);
+          return;
+        }
+
+        await AsyncStorage.setItem('kinguardian_demo_scenario_v2', currentScenario);
+        await AsyncStorage.setItem('kinguardian_demo_bp_v2', currentBP);
+        await AsyncStorage.setItem('kinguardian_demo_people_v2', JSON.stringify(people));
+        await AsyncStorage.setItem('kinguardian_demo_medications_v2', JSON.stringify(medications));
+        await AsyncStorage.setItem('kinguardian_demo_notifications_v2', JSON.stringify(notifications));
+        await AsyncStorage.setItem('kinguardian_demo_tasks_v2', JSON.stringify(careTasks));
+        await AsyncStorage.setItem('kinguardian_demo_records_v2', JSON.stringify(records));
+        await AsyncStorage.setItem('kinguardian_demo_contacts_v2', JSON.stringify(emergencyContacts));
+        await AsyncStorage.setItem('kinguardian_demo_alerts_v2', JSON.stringify(activeAlerts));
       } catch (err) {
         console.warn('Failed to save offline state:', err);
       }
     };
     saveState();
-  }, [currentScenario, currentBP, people, medications, notifications, careTasks, records, emergencyContacts, activeAlerts]);
+  }, [
+    user?.id,
+    loadedUserId,
+    isDemoAccount,
+    currentScenario,
+    currentBP,
+    people,
+    medications,
+    notifications,
+    careTasks,
+    records,
+    emergencyContacts,
+    activeAlerts
+  ]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -490,7 +621,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   // --- EMERGENCY CONTACTS METHODS (M2) ---
-  const fetchEmergencyContacts = async (userId: string = RAMESH_USER_ID): Promise<EmergencyContact[]> => {
+  const fetchEmergencyContacts = async (
+    userId: string = RAMESH_USER_ID
+  ): Promise<EmergencyContact[]> => {
     try {
       const res = await apiClient.contacts.listByUser(userId);
       if (res && res.data && Array.isArray(res.data)) {
@@ -508,7 +641,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     userId: string,
     data: EmergencyContactCreate
   ): Promise<EmergencyContact | null> => {
-    const validUserId = (userId && userId.length === 36) ? userId : RAMESH_USER_ID;
+    const validUserId = userId && userId.length === 36 ? userId : RAMESH_USER_ID;
     let created: EmergencyContact;
 
     try {
@@ -519,7 +652,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error('No contact data returned');
       }
     } catch (apiErr: any) {
-      console.warn('AppProvider: Backend contacts.create offline fallback:', apiErr?.message || apiErr);
+      console.warn(
+        'AppProvider: Backend contacts.create offline fallback:',
+        apiErr?.message || apiErr
+      );
       created = {
         id: generateUUID(),
         user_id: validUserId,
@@ -556,7 +692,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updated = res.data;
       }
     } catch (apiErr: any) {
-      console.warn('AppProvider: Backend contacts.update offline fallback:', apiErr?.message || apiErr);
+      console.warn(
+        'AppProvider: Backend contacts.update offline fallback:',
+        apiErr?.message || apiErr
+      );
     }
 
     const updatedList = emergencyContacts.map((c) => {
@@ -591,7 +730,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await apiClient.contacts.delete(id);
     } catch (apiErr: any) {
-      console.warn('AppProvider: Backend contacts.delete offline fallback:', apiErr?.message || apiErr);
+      console.warn(
+        'AppProvider: Backend contacts.delete offline fallback:',
+        apiErr?.message || apiErr
+      );
     }
 
     const updatedList = emergencyContacts.filter((c) => c.id !== id);
@@ -621,7 +763,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createAlert = async (data: AlertCreateInput): Promise<AlertIncident | null> => {
-    const validUserId = (data.userId && data.userId.length === 36) ? data.userId : RAMESH_USER_ID;
+    const validUserId = data.userId && data.userId.length === 36 ? data.userId : RAMESH_USER_ID;
     let created: AlertIncident;
 
     try {
@@ -635,7 +777,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error('No alert data returned');
       }
     } catch (apiErr: any) {
-      console.warn('AppProvider: Backend alerts.create offline fallback:', apiErr?.message || apiErr);
+      console.warn(
+        'AppProvider: Backend alerts.create offline fallback:',
+        apiErr?.message || apiErr
+      );
       created = {
         id: generateUUID(),
         user_id: validUserId,
@@ -681,7 +826,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return created;
   };
 
-  const acknowledgeAlert = async (id: string, acknowledgedBy: string): Promise<AlertIncident | null> => {
+  const acknowledgeAlert = async (
+    id: string,
+    acknowledgedBy: string
+  ): Promise<AlertIncident | null> => {
     let updated: AlertIncident | null = null;
     try {
       const res = await apiClient.alerts.acknowledge(id, { acknowledged_by: acknowledgedBy });
@@ -689,7 +837,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updated = res.data;
       }
     } catch (apiErr: any) {
-      console.warn('AppProvider: Backend alerts.acknowledge offline fallback:', apiErr?.message || apiErr);
+      console.warn(
+        'AppProvider: Backend alerts.acknowledge offline fallback:',
+        apiErr?.message || apiErr
+      );
     }
 
     const updatedList = activeAlerts.map((a) => {
@@ -717,7 +868,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return updated;
   };
 
-  const resolveAlert = async (id: string, resolutionNotes: string): Promise<AlertIncident | null> => {
+  const resolveAlert = async (
+    id: string,
+    resolutionNotes: string
+  ): Promise<AlertIncident | null> => {
     let updated: AlertIncident | null = null;
     try {
       const res = await apiClient.alerts.resolve(id, { resolution_notes: resolutionNotes });
@@ -725,7 +879,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updated = res.data;
       }
     } catch (apiErr: any) {
-      console.warn('AppProvider: Backend alerts.resolve offline fallback:', apiErr?.message || apiErr);
+      console.warn(
+        'AppProvider: Backend alerts.resolve offline fallback:',
+        apiErr?.message || apiErr
+      );
     }
 
     const updatedList = activeAlerts.map((a) => {
@@ -855,11 +1012,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await runWithSyncLoader(async () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const updatedPerson = await familyService.updateCheckIn('dad', status);
+      const targetSubject = people.find((p) => p.id === currentPersonId) || people[0];
+      const subjectUuid = targetSubject?.backendSubjectId;
+      if (subjectUuid && UUID_REGEX.test(subjectUuid)) {
+        const mappedFeeling =
+          status === 'Good' ? 'good' : status === 'Tired' ? 'okay' : 'not_well';
+        postCareApi(`/subjects/${subjectUuid}/check-ins`, 'POST', {
+          feeling: mappedFeeling,
+          note: `Logged ${status} check-in`,
+          actor_id: user?.id || subjectUuid
+        });
+      }
 
       // Clear active check-in request notification
       setNotifications((prev) =>
         prev.map((n) =>
-          n.recipient === 'parent' && n.category === 'kinguardian_request' ? { ...n, read: true } : n
+          n.recipient === 'parent' && n.category === 'kinguardian_request'
+            ? { ...n, read: true }
+            : n
         )
       );
 
@@ -951,11 +1121,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await runWithSyncLoader(async () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const newMember = await familyService.addParent(payload);
+      // Persist to PostgreSQL care_subjects table
+      const dbSubject = await postCareApi('/subjects', 'POST', {
+        name: payload.name,
+        relationship: payload.relationship || 'Parent',
+        age: payload.age || 65,
+        city: payload.city || 'Chennai',
+        country: 'India',
+        timezone: payload.timezone || 'Asia/Kolkata',
+        phone: payload.phone
+      });
+      if (dbSubject?.data?.id) {
+        newMember.backendSubjectId = dbSubject.data.id;
+      }
       setPeople((prev) => {
         const filtered = prev.filter(
-          (p) => p.id !== newMember.id && (!newMember.backendSubjectId || p.backendSubjectId !== newMember.backendSubjectId)
+          (p) =>
+            p.id !== newMember.id &&
+            (!newMember.backendSubjectId || p.backendSubjectId !== newMember.backendSubjectId)
         );
         return [...filtered, newMember];
+      });
+      setCurrentPersonId((prevId) => prevId || newMember.id);
+      setObservations((prev) => {
+        if (prev[newMember.id]) return prev;
+        return {
+          ...prev,
+          [newMember.id]: {
+            personId: newMember.id,
+            bp: '120/80 mmHg',
+            heartRate: '72 bpm',
+            steps: '0',
+            sleep: '7h 30m',
+            glucose: '98 mg/dL',
+            lastSynced: 'Just added',
+            summary: `${newMember.name}'s profile is connected and ready for wearable telemetry.`,
+            status: 'normal'
+          } as any
+        };
       });
       showToast(`Connected ${payload.name} (${payload.relationship || 'Parent'}) successfully.`);
     });
@@ -994,8 +1197,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const docNotif: AppNotification = {
         id: `sim-notif-doc-${Date.now()}`,
         title: 'New Health Document Uploaded',
-        message:
-          `Dad (${primaryParentName}) uploaded a new Cardiology paper snapshot. Click to read AI analysis.`,
+        message: `Dad (${primaryParentName}) uploaded a new Cardiology paper snapshot. Click to read AI analysis.`,
         type: 'info',
         time: 'Just now',
         read: false,
@@ -1038,7 +1240,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       subtitle: `${appt.doctor} • ${appt.date} at ${appt.time}`,
       date: appt.date,
       status: 'Scheduled',
-      tag: currentPersonId === 'dad' ? `${primaryParentName} (Dad)` : `${secondaryParentName} (Mom)`,
+      tag:
+        currentPersonId === 'dad' ? `${primaryParentName} (Dad)` : `${secondaryParentName} (Mom)`,
       icon: 'calendar',
       iconBgColor: 'bg-rose-50',
       iconColor: 'text-[#ff3b30]'
@@ -1082,6 +1285,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await runWithSyncLoader(async () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const updated = await medicationService.markTaken(medicationId, 'taken');
+      const medItem = medications.find((m) => m.id === medicationId);
+      const targetSubject = people.find((p) => p.id === (medItem?.personId || currentPersonId)) || people[0];
+      const subjectUuid = targetSubject?.backendSubjectId;
+      if (subjectUuid && UUID_REGEX.test(subjectUuid)) {
+        postCareApi(`/subjects/${subjectUuid}/medications/adherence`, 'POST', {
+          medication_name: medItem?.name || updated.name || 'Medication',
+          dose: medItem?.dose || '',
+          scheduled_time: medItem?.scheduledTime || '',
+          status: 'taken',
+          confirmed_by: user?.name || coordinatorName,
+          idempotency_key: `med-${medicationId}-${new Date().toISOString().slice(0, 13)}`
+        });
+      }
       setMedications((prev) =>
         prev.map((m) => (m.id === medicationId ? { ...m, status: 'taken' } : m))
       );
@@ -1169,6 +1385,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         prev.map((t) => (t.id === taskId ? { ...t, status: 'completed' } : t))
       );
       const task = careTasks.find((t) => t.id === taskId);
+      if (UUID_REGEX.test(taskId)) {
+        postCareApi(`/care/tasks/${taskId}/complete`, 'PATCH');
+      }
 
       const newLog: SyncLog = {
         id: `slog-task-${Date.now()}`,
@@ -1185,7 +1404,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const assignCareTask = async (task: CareTask) => {
     await runWithSyncLoader(async () => {
-      setCareTasks((prev) => [...prev, task]);
+      const targetSubject = people.find((p) => p.id === task.personId) || people[0];
+      const subjectUuid = targetSubject?.backendSubjectId;
+      const dbTask = await postCareApi('/care/tasks', 'POST', {
+        subject_id: subjectUuid && UUID_REGEX.test(subjectUuid) ? subjectUuid : undefined,
+        title: task.title,
+        assigned_to: task.assignedTo,
+        priority: task.priority || 'medium',
+        due_at: task.dueAt
+      });
+      const persistedTask: CareTask = dbTask?.data?.id ? { ...task, id: dbTask.data.id } : task;
+      setCareTasks((prev) => [...prev, persistedTask]);
       const newLog: SyncLog = {
         id: `slog-task-${Date.now()}`,
         time: 'Just now',
@@ -1226,8 +1455,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newNotif = {
         id: `sim-notif-${Date.now()}`,
         title: 'BP Spiking Alert (Dad)',
-        message:
-          `${primaryParentName}’s evening blood pressure increased to 142/90 mmHg. KinGuardian suggests checking room temperature.`,
+        message: `${primaryParentName}’s evening blood pressure increased to 142/90 mmHg. KinGuardian suggests checking room temperature.`,
         type: 'alert',
         time: 'Just now',
         read: false,
@@ -1239,8 +1467,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newNotif = {
         id: `sim-notif-${Date.now()}`,
         title: 'Medication Non-Adherence Alert',
-        message:
-          `Dad (${primaryParentName}) has not checked off his morning Amlodipine 5mg dose. (Scheduled 2h ago).`,
+        message: `Dad (${primaryParentName}) has not checked off his morning Amlodipine 5mg dose. (Scheduled 2h ago).`,
         type: 'reminder',
         time: 'Just now',
         read: false,
@@ -1371,8 +1598,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         dad: {
           ...prev.dad,
-          primaryStatement:
-            `I noticed ${primaryParentName}'s BP rose to 142/90 mmHg. The data shows this is different from ${primaryParentName}'s usual pattern. You may want to discuss this with his doctor.`,
+          primaryStatement: `I noticed ${primaryParentName}'s BP rose to 142/90 mmHg. The data shows this is different from ${primaryParentName}'s usual pattern. You may want to discuss this with his doctor.`,
           highlightText:
             'Systolic readings rose by 12% alongside a 35% decrease in outdoor step recovery.'
         }
@@ -1382,8 +1608,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const loopNotif: AppNotification = {
         id: `loop-notif-${Date.now()}`,
         title: `Care Alert: ${primaryParentName}`,
-        message:
-          `I noticed ${primaryParentName}’s BP rose to 142/90 mmHg. The data shows this is different from ${primaryParentName}’s usual pattern. You may want to discuss this with his doctor.`,
+        message: `I noticed ${primaryParentName}’s BP rose to 142/90 mmHg. The data shows this is different from ${primaryParentName}’s usual pattern. You may want to discuss this with his doctor.`,
         type: 'alert',
         time: 'Just now',
         read: false,
@@ -1522,8 +1747,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newNotifs.unshift({
         id: `scen-notif-guard-${Date.now()}`,
         title: 'Care Alert: BP Spike',
-        message:
-          `I noticed ${primaryParentName}’s systolic blood pressure rose to 142/90 mmHg. The data shows this is different from Dad’s usual pattern. You may want to discuss this with his doctor.`,
+        message: `I noticed ${primaryParentName}’s systolic blood pressure rose to 142/90 mmHg. The data shows this is different from Dad’s usual pattern. You may want to discuss this with his doctor.`,
         type: 'alert',
         time: 'Just now',
         read: false,
@@ -1545,8 +1769,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `scen-ins-guard-${Date.now()}`,
         personId: 'dad',
         title: 'Systolic Blood Pressure Spike',
-        summary:
-          `I noticed ${primaryParentName} sir’s blood pressure spiked to 142/90 mmHg. The data shows this is different from Dad’s usual pattern. You may want to discuss this with his doctor.`,
+        summary: `I noticed ${primaryParentName} sir’s blood pressure spiked to 142/90 mmHg. The data shows this is different from Dad’s usual pattern. You may want to discuss this with his doctor.`,
         type: 'observation',
         severity: 'attention',
         timeframe: 'Just now',
@@ -1569,8 +1792,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newNotifs.unshift({
         id: `scen-notif-doc-${Date.now()}`,
         title: 'Clinical Document Uploaded',
-        message:
-          `I noticed 6 new lab results in the Apollo report. The data shows creatinine has a slight elevation from ${primaryParentName}’s baseline. You may want to discuss this with his doctor.`,
+        message: `I noticed 6 new lab results in the Apollo report. The data shows creatinine has a slight elevation from ${primaryParentName}’s baseline. You may want to discuss this with his doctor.`,
         type: 'sync',
         time: 'Just now',
         read: false,

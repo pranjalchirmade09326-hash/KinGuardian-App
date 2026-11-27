@@ -87,7 +87,16 @@ export default function FeaturesScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
         >
           <ChevronLeft size={20} color="#007aff" />
-          <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#007aff', alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              backgroundColor: '#007aff',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
             <Heart size={18} color="#ffffff" />
           </View>
           <Text style={{ fontSize: 18, fontWeight: '900', color: '#0f172a' }}>KinGuardian</Text>
@@ -96,36 +105,100 @@ export default function FeaturesScreen() {
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <TouchableOpacity
             onPress={() => router.push('/(auth)/sign-in')}
-            style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' }}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: '#e2e8f0'
+            }}
           >
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#1e293b' }}>Sign In</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/(auth)/sign-up')}
-            style={{ paddingHorizontal: 18, paddingVertical: 8, borderRadius: 10, backgroundColor: '#007aff' }}
+            style={{
+              paddingHorizontal: 18,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: '#007aff'
+            }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Start Free Trial</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+              Start Free Trial
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 80 }}>
         {/* Hero Section */}
-        <View style={{ width: '100%', paddingVertical: 64, paddingHorizontal: 24, backgroundColor: '#f8fafc', alignItems: 'center' }}>
-          <Text style={{ fontSize: 12, fontWeight: '800', color: '#007aff', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
+        <View
+          style={{
+            width: '100%',
+            paddingVertical: 64,
+            paddingHorizontal: 24,
+            backgroundColor: '#f8fafc',
+            alignItems: 'center'
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '800',
+              color: '#007aff',
+              textTransform: 'uppercase',
+              letterSpacing: 1.5,
+              marginBottom: 12
+            }}
+          >
             Platform Capabilities
           </Text>
-          <Text style={{ fontSize: 38, fontWeight: '900', color: '#0f172a', textAlign: 'center', maxWidth: 800, letterSpacing: -0.5 }}>
+          <Text
+            style={{
+              fontSize: 38,
+              fontWeight: '900',
+              color: '#0f172a',
+              textAlign: 'center',
+              maxWidth: 800,
+              letterSpacing: -0.5
+            }}
+          >
             Purpose-built technology to care for aging parents from thousands of miles away.
           </Text>
-          <Text style={{ fontSize: 16, color: '#475569', textAlign: 'center', maxWidth: 640, marginTop: 16, lineHeight: 26 }}>
-            Every tool in KinGuardian is designed specifically around the real challenges of distance, international time zones, and elder independence.
+          <Text
+            style={{
+              fontSize: 16,
+              color: '#475569',
+              textAlign: 'center',
+              maxWidth: 640,
+              marginTop: 16,
+              lineHeight: 26
+            }}
+          >
+            Every tool in KinGuardian is designed specifically around the real challenges of
+            distance, international time zones, and elder independence.
           </Text>
         </View>
 
         {/* Feature Cards Grid */}
-        <View style={{ width: '100%', maxWidth: 1280, alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 64 }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 24, justifyContent: 'space-between' }}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth: 1280,
+            alignSelf: 'center',
+            paddingHorizontal: 24,
+            paddingVertical: 64
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 24,
+              justifyContent: 'space-between'
+            }}
+          >
             {featuresList.map((item, idx) => {
               const Icon = item.icon;
               return (
@@ -144,12 +217,30 @@ export default function FeaturesScreen() {
                     shadowRadius: 16
                   }}
                 >
-                  <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                  <View
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 16,
+                      backgroundColor: item.bg,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 20
+                    }}
+                  >
                     <Icon size={26} color={item.color} />
                   </View>
-                  <Text style={{ fontSize: 20, fontWeight: '800', color: '#0f172a' }}>{item.title}</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: item.color, marginTop: 4 }}>{item.subtitle}</Text>
-                  <Text style={{ fontSize: 14, color: '#475569', marginTop: 12, lineHeight: 24 }}>{item.desc}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: '#0f172a' }}>
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 12, fontWeight: '700', color: item.color, marginTop: 4 }}
+                  >
+                    {item.subtitle}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: '#475569', marginTop: 12, lineHeight: 24 }}>
+                    {item.desc}
+                  </Text>
                 </View>
               );
             })}
@@ -158,18 +249,47 @@ export default function FeaturesScreen() {
 
         {/* CTA Bar */}
         <View style={{ width: '100%', maxWidth: 1280, alignSelf: 'center', paddingHorizontal: 24 }}>
-          <View style={{ backgroundColor: '#007aff', borderRadius: 28, padding: 48, alignItems: 'center' }}>
-            <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', textAlign: 'center' }}>
+          <View
+            style={{
+              backgroundColor: '#007aff',
+              borderRadius: 28,
+              padding: 48,
+              alignItems: 'center'
+            }}
+          >
+            <Text
+              style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', textAlign: 'center' }}
+            >
               Ready to protect your parents’ health today?
             </Text>
-            <Text style={{ fontSize: 15, color: '#dbeafe', marginTop: 12, textAlign: 'center', maxWidth: 600 }}>
-              Set up takes less than 5 minutes. No credit card required. Free 14-day trial for NRI families.
+            <Text
+              style={{
+                fontSize: 15,
+                color: '#dbeafe',
+                marginTop: 12,
+                textAlign: 'center',
+                maxWidth: 600
+              }}
+            >
+              Set up takes less than 5 minutes. No credit card required. Free 14-day trial for NRI
+              families.
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/(auth)/sign-up')}
-              style={{ marginTop: 28, backgroundColor: '#ffffff', paddingHorizontal: 32, paddingVertical: 15, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+              style={{
+                marginTop: 28,
+                backgroundColor: '#ffffff',
+                paddingHorizontal: 32,
+                paddingVertical: 15,
+                borderRadius: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10
+              }}
             >
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#007aff' }}>Start 14-Day Free Trial</Text>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#007aff' }}>
+                Start 14-Day Free Trial
+              </Text>
               <ArrowRight size={18} color="#007aff" />
             </TouchableOpacity>
           </View>

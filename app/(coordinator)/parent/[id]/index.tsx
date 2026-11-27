@@ -9,11 +9,20 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 export default function ParentDetailRoute() {
   const context = useContext(AppContext);
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: 'dad' | 'mom' }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
   if (!context) return null;
 
-  const personId = id || 'dad';
+  const personId = id || context.currentPersonId || context.familyMembers[0]?.id || 'dad';
+  const matchedPerson = context.familyMembers.find(
+    (p) => p.id === personId || p.backendSubjectId === personId
+  );
+  const isFather =
+    personId === 'dad' ||
+    matchedPerson?.relationship?.toLowerCase().includes('father') ||
+    matchedPerson?.relationship?.toLowerCase().includes('dad') ||
+    matchedPerson?.relation?.toLowerCase().includes('father') ||
+    false;
 
   return (
     <DeviceFrame>
@@ -23,7 +32,7 @@ export default function ParentDetailRoute() {
           onBack={() => router.replace('/(coordinator)')}
           onLogBP={context.handleManualBPLog}
           onLogGlucose={context.handleManualGlucoseLog}
-          readingsHistory={personId === 'dad' ? context.bpHistory : context.glucoseHistory}
+          readingsHistory={isFather ? context.bpHistory : context.glucoseHistory}
         />
       </View>
       <SimulatorControls

@@ -1,5 +1,15 @@
 import { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Switch, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  Switch,
+  TextInput,
+  ActivityIndicator,
+  Platform
+} from 'react-native';
 import { AppContext } from '../../src/store/AppContext';
 import { ParentBottomNavBar } from '../../src/components/Navigation';
 import { DeviceFrame } from '../../src/components/DeviceFrame';
@@ -28,7 +38,9 @@ export default function ParentProfileRoute() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Parent profile form fields
-  const [parentName, setParentName] = useState(user?.name || context?.primaryParentName || 'Parent');
+  const [parentName, setParentName] = useState(
+    user?.name || context?.primaryParentName || 'Parent'
+  );
   const [parentPhone, setParentPhone] = useState(user?.phone || '919270756299');
   const [parentCity, setParentCity] = useState(user?.city || 'Chennai');
   const [parentCountry, setParentCountry] = useState(user?.country || 'India');
@@ -98,7 +110,7 @@ export default function ParentProfileRoute() {
     },
     {
       title: 'My family',
-      description: `${context.coordinatorName} (London) · Rahul (Dubai) · ${context.secondaryParentName} (Chennai)`,
+      description: `${context.coordinatorName} · Family Care Circle`,
       icon: Users,
       color: '#007aff',
       bgColor: '#eff6ff'
@@ -208,7 +220,7 @@ export default function ParentProfileRoute() {
             onPress={async () => {
               await signOut();
               context.showToast('Signed out of KinGuardian');
-              router.replace('/(auth)/landing');
+              router.replace(Platform.OS === 'web' ? '/(auth)/landing' : '/(auth)/sign-in');
             }}
             className="w-full bg-red-50 border border-red-200 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 active:opacity-95 shadow-xs"
           >
@@ -263,9 +275,9 @@ export default function ParentProfileRoute() {
                     Simple permissions explanation
                   </Text>
                   <Text className="text-xs text-neutral-500 font-semibold leading-relaxed">
-                    Sharing lets {context.coordinatorName} look out for your health from London, and allows Priya to
-                    check off your daily medication logs in Chennai. We encrypt all documents and
-                    telemetry. You are always in control of who sees what.
+                    Sharing lets {context.coordinatorName} look out for your health from London, and
+                    allows Priya to check off your daily medication logs in Chennai. We encrypt all
+                    documents and telemetry. You are always in control of who sees what.
                   </Text>
                 </View>
 
@@ -301,7 +313,9 @@ export default function ParentProfileRoute() {
                   {/* Coordinator */}
                   <View className="bg-white border border-neutral-100 rounded-xl p-4 flex-row justify-between items-center">
                     <View className="space-y-0.5">
-                      <Text className="text-xs font-bold text-neutral-800">{context.coordinatorName} (Coordinator)</Text>
+                      <Text className="text-xs font-bold text-neutral-800">
+                        {context.coordinatorName} (Coordinator)
+                      </Text>
                       <Text className="text-[10px] text-neutral-400 font-semibold">
                         Primary Coordinator · London
                       </Text>

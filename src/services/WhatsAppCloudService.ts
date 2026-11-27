@@ -2,7 +2,8 @@ import { buildWhatsAppWebLink, cleanPhoneNumber } from '../utils/whatsapp';
 
 export interface WhatsAppMessagePayload {
   recipientPhone: string;
-  templateType: 'morning_digest' | 'vital_alert' | 'medication_reminder' | 'checkin_request' | 'custom';
+  templateType:
+    'morning_digest' | 'vital_alert' | 'medication_reminder' | 'checkin_request' | 'custom';
   messageText: string;
   metadata?: Record<string, any>;
 }
@@ -228,7 +229,12 @@ class WhatsAppCloudService {
       lower.includes('yes')
     ) {
       intent = 'medication_confirmed';
-    } else if (lower.includes('emergency') || lower.includes('dard') || lower.includes('pain') || lower.includes('help')) {
+    } else if (
+      lower.includes('emergency') ||
+      lower.includes('dard') ||
+      lower.includes('pain') ||
+      lower.includes('help')
+    ) {
       intent = 'emergency_sos';
     }
 

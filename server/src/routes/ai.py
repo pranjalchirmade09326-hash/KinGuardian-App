@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
+import asyncio
+from datetime import datetime, timedelta
+import json
+import logging
+import os
 import re
+import urllib.error
+import urllib.request
 
 from fastapi import APIRouter
 
 from src.schemas import AskAiRequest
 
 ai_router = APIRouter(tags=["AI"])
+logger = logging.getLogger(__name__)
 
 
 def _clean_patient_name(name: str | None) -> str:
@@ -18,11 +26,102 @@ def _clean_patient_name(name: str | None) -> str:
     return stripped or name.strip() or "Dad"
 
 
+def _strip_markdown(text: str) -> str:
+    """Remove raw markdown tokens (**, __, #, `) so mobile/web Text renders cleanly."""
+    cleaned = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    cleaned = re.sub(r"__([^_]+)__", r"\1", cleaned)
+    cleaned = re.sub(r"`([^`]+)`", r"\1", cleaned)
+    cleaned = re.sub(r"^#{1,6}\s+", "", cleaned, flags=re.MULTILINE)
+    return cleaned.replace("**", "").strip()
+
+
+GEMINI_MODELS = [
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest",
+    "gemini-3.8-flash",
+]
+
+
+def _call_gemini_sync(query: str, patient_name: str, current_bp: str) -> tuple[str, str] | None:
+    api_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
+    if not api_key:
+        return None
+
+    today_str = datetime.now().strftime("%B %d, %Y").replace(" 0", " ")
+    system_prompt = (
+        "You are KinGuardian Clinical AI, a warm, knowledgeable elder-care assistant for NRI "
+        "families caring for aging parents in India.\n"
+        f"Today's date: {today_str}.\n"
+        f"Patient context: Name={patient_name}, Latest Blood Pressure={current_bp}.\n"
+        "Guidelines:\n"
+        "- Give clear, helpful, empathetic, non-alarmist answers.\n"
+        "- Respond in the same language/style as the user (English, Hindi, or Hinglish).\n"
+        "- NEVER use markdown symbols like **, *, ##, or backticks. Use plain clean text "
+        "with simple bullet points (•) and short paragraphs.\n"
+        "- Keep answers concise (4-8 lines max) and actionable."
+    )
+
+    payload = {
+        "system_instruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"role": "user", "parts": [{"text": query}]}],
+        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 512},
+    }
+    encoded_payload = json.dumps(payload).encode("utf-8")
+
+    for model_name in GEMINI_MODELS:
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model_name}:generateContent?key={api_key}"
+        )
+        req = urllib.request.Request(
+            url,
+            data=encoded_payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+            candidates = body.get("candidates") or []
+            if not candidates:
+                continue
+            parts = (candidates[0].get("content") or {}).get("parts") or []
+            text = "".join(p.get("text", "") for p in parts).strip()
+            if text:
+                return _strip_markdown(text), model_name
+        except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as exc:
+            logger.warning("Gemini model %s failed (%s), trying next model", model_name, exc)
+            continue
+
+    return None
+
+
 @ai_router.post("/ask")
 async def ask_ai(payload: AskAiRequest) -> dict:
     p_name = _clean_patient_name(payload.patientName)
     current_bp = payload.currentBP
     q = payload.query.lower().strip()
+
+    gemini_result = await asyncio.to_thread(
+        _call_gemini_sync, payload.query, p_name, current_bp
+    )
+    if gemini_result:
+        gemini_answer, used_model = gemini_result
+        return {
+            "success": True,
+            "data": {
+                "answer": gemini_answer,
+                "citations": [
+                    f"Gemini Clinical Assistant ({used_model})",
+                    f"{p_name} Telemetry Context (BP: {current_bp})",
+                ],
+                "suggestedFollowUps": [
+                    f"How is {p_name}'s blood pressure trending?",
+                    "What should I ask the doctor?",
+                    "Review medication schedule",
+                ],
+            },
+        }
 
     citations = [
         "Omron Blood Pressure Hub (17 telemetry readings)",
@@ -109,8 +208,9 @@ async def ask_ai(payload: AskAiRequest) -> dict:
         kw in q
         for kw in ("blood test", "lab", "report", "cmp", "kidney", "creatinine")
     ):
+        recent_lab_date = (datetime.now() - timedelta(days=12)).strftime("%B %d, %Y").replace(" 0", " ")
         answer = (
-            f"{p_name}'s most recent Comprehensive Metabolic Panel (CMP) was completed on August 3, 2026 at Apollo Diagnostics Chennai. All vital markers are within stable clinical thresholds:\n\n"
+            f"{p_name}'s most recent Comprehensive Metabolic Panel (CMP) was completed on {recent_lab_date} at Apollo Diagnostics Chennai. All vital markers are within stable clinical thresholds:\n\n"
             "• eGFR (Kidney Function): 78 mL/min/1.73m² (Optimal)\n"
             "• Serum Creatinine: 1.1 mg/dL (Normal)\n"
             "• Serum Potassium: 4.4 mmol/L (Normal)\n"

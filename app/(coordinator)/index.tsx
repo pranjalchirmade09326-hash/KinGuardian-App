@@ -111,7 +111,6 @@ export default function CoordinatorDashboardRoute() {
           currentSubject={context.currentPersonId}
         />
 
-
         <CheckInModal
           isOpen={context.checkInOpen}
           person={currentPerson}

@@ -604,7 +604,6 @@ export const AIInsightCard: React.FC<{
             Ask KinGuardian
           </Text>
         </TouchableOpacity>
-
       )}
     </View>
   );

@@ -37,8 +37,6 @@ export const ReconnectWearableSheet: React.FC<ReconnectWearableSheetProps> = ({
     ? `KinGuardian is waiting for new telemetry from ${careSubjectName}'s ${provider.replace('_', ' ')} device. This is an operational sync delay, not a health change.`
     : `Bluetooth or permissions for your ${provider.replace('_', ' ')} device may have paused. Tap Reconnect to resume live health tracking.`;
 
-
-
   const handleReconnectAction = async () => {
     try {
       setIsReconnecting(true);

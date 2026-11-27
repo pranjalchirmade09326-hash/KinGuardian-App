@@ -1,7 +1,8 @@
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: 'landing'
+  initialRouteName: Platform.OS === 'web' ? 'landing' : 'sign-in'
 };
 
 export default function AuthLayout() {

@@ -45,7 +45,16 @@ export default function SecurityScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
         >
           <ChevronLeft size={20} color="#007aff" />
-          <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#007aff', alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              backgroundColor: '#007aff',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
             <Heart size={18} color="#ffffff" />
           </View>
           <Text style={{ fontSize: 18, fontWeight: '900', color: '#0f172a' }}>KinGuardian</Text>
@@ -54,33 +63,90 @@ export default function SecurityScreen() {
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <TouchableOpacity
             onPress={() => router.push('/(auth)/sign-in')}
-            style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' }}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: '#e2e8f0'
+            }}
           >
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#1e293b' }}>Sign In</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/(auth)/sign-up')}
-            style={{ paddingHorizontal: 18, paddingVertical: 8, borderRadius: 10, backgroundColor: '#007aff' }}
+            style={{
+              paddingHorizontal: 18,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: '#007aff'
+            }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>Start Free Trial</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+              Start Free Trial
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 80 }}>
-        <View style={{ width: '100%', paddingVertical: 56, paddingHorizontal: 24, backgroundColor: '#f8fafc', alignItems: 'center' }}>
-          <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+        <View
+          style={{
+            width: '100%',
+            paddingVertical: 56,
+            paddingHorizontal: 24,
+            backgroundColor: '#f8fafc',
+            alignItems: 'center'
+          }}
+        >
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 18,
+              backgroundColor: '#eff6ff',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 16
+            }}
+          >
             <ShieldCheck size={32} color="#007aff" />
           </View>
-          <Text style={{ fontSize: 36, fontWeight: '900', color: '#0f172a', textAlign: 'center', letterSpacing: -0.5 }}>
+          <Text
+            style={{
+              fontSize: 36,
+              fontWeight: '900',
+              color: '#0f172a',
+              textAlign: 'center',
+              letterSpacing: -0.5
+            }}
+          >
             Enterprise-Grade Health Security
           </Text>
-          <Text style={{ fontSize: 16, color: '#475569', textAlign: 'center', maxWidth: 600, marginTop: 14, lineHeight: 26 }}>
-            Because your parents' intimate health data deserves the strictest medical privacy safeguards on the planet.
+          <Text
+            style={{
+              fontSize: 16,
+              color: '#475569',
+              textAlign: 'center',
+              maxWidth: 600,
+              marginTop: 14,
+              lineHeight: 26
+            }}
+          >
+            Because your parents' intimate health data deserves the strictest medical privacy
+            safeguards on the planet.
           </Text>
         </View>
 
-        <View style={{ width: '100%', maxWidth: 1000, alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 64 }}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth: 1000,
+            alignSelf: 'center',
+            paddingHorizontal: 24,
+            paddingVertical: 64
+          }}
+        >
           <View style={{ gap: 24 }}>
             {securityPoints.map((item, idx) => (
               <View
@@ -96,12 +162,25 @@ export default function SecurityScreen() {
                   alignItems: 'flex-start'
                 }}
               >
-                <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#f0fdf4', alignItems: 'center', justifyContent: 'center' }}>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: '#f0fdf4',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
                   <CheckCircle2 size={24} color="#16a34a" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#0f172a' }}>{item.title}</Text>
-                  <Text style={{ fontSize: 14, color: '#475569', marginTop: 6, lineHeight: 24 }}>{item.desc}</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#0f172a' }}>
+                    {item.title}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: '#475569', marginTop: 6, lineHeight: 24 }}>
+                    {item.desc}
+                  </Text>
                 </View>
               </View>
             ))}

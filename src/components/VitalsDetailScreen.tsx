@@ -16,9 +16,8 @@ import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { AppContext } from '../store/AppContext';
 
-
 interface VitalsDetailScreenProps {
-  personId: 'dad' | 'mom';
+  personId: string;
   onBack: () => void;
   onLogBP: (vital: { systolic: number; diastolic: number; note: string }) => void;
   onLogGlucose: (value: number, note: string) => void;
@@ -43,11 +42,38 @@ export const VitalsDetailScreen: React.FC<VitalsDetailScreenProps> = ({
 
   if (!context) return null;
 
-  const isDad = personId === 'dad';
-  const parent = isDad
-    ? context.familyMembers.find((p) => p.id === 'dad')
-    : context.familyMembers.find((p) => p.id === 'mom');
-  if (!parent) return null;
+  const parent =
+    context.familyMembers.find(
+      (p) => p.id === personId || p.backendSubjectId === personId
+    ) ||
+    context.familyMembers.find((p) =>
+      personId === 'dad'
+        ? p.id === 'dad' || p.relationship?.toLowerCase().includes('father')
+        : p.id === 'mom' || p.relationship?.toLowerCase().includes('mother')
+    ) ||
+    context.familyMembers[0];
+
+  if (!parent) {
+    return (
+      <View className="flex-1 bg-[#fbfaf7] items-center justify-center p-6 space-y-4">
+        <Text className="text-base font-bold text-slate-800">Parent profile not found</Text>
+        <TouchableOpacity
+          onPress={onBack}
+          className="bg-[#007aff] px-5 py-2.5 rounded-xl"
+        >
+          <Text className="text-white text-xs font-bold">Back to Dashboard</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const isDad =
+    personId === 'dad' ||
+    parent.relationship?.toLowerCase().includes('father') ||
+    parent.relationship?.toLowerCase().includes('dad') ||
+    parent.relation?.toLowerCase().includes('father') ||
+    parent.relation?.toLowerCase().includes('dad') ||
+    false;
 
   // Vitals check for alert status
   const bpSystolic = parseInt(context.currentBP.split('/')[0] || '120', 10);
@@ -128,9 +154,12 @@ export const VitalsDetailScreen: React.FC<VitalsDetailScreenProps> = ({
             <View className="space-y-0.5">
               <Text className="text-xl font-black text-[#121c2a]">{parent.name}</Text>
               <Text className="text-xs text-slate-500 font-bold">
-                {parent.age} · {isDad ? 'Dad' : 'Mom'}
+                {parent.age || 65} · {parent.relationship || parent.relation || (isDad ? 'Father' : 'Mother')}
               </Text>
-              <Text className="text-[10px] text-slate-400 font-semibold">Chennai, India</Text>
+              <Text className="text-[10px] text-slate-400 font-semibold">
+                {parent.city || 'India'}
+                {parent.country ? `, ${parent.country}` : ', India'}
+              </Text>
             </View>
           </View>
           <View className={`px-3 py-1 rounded-full ${statusColor}`}>
@@ -196,7 +225,6 @@ export const VitalsDetailScreen: React.FC<VitalsDetailScreenProps> = ({
 
         {/* SECTION 1: Health Today */}
         <View className="space-y-3">
-
           <Text className="text-sm font-black text-[#121c2a] uppercase tracking-wider">
             Health today
           </Text>

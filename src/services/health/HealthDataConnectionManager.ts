@@ -5,12 +5,12 @@
  * preventing any React Native UI component from directly referencing vendor SDKs.
  */
 
-import {
-  HealthDataConnection,
-  HealthProviderType
-} from './types';
+import { HealthDataConnection, HealthProviderType } from './types';
 
-import { OpenWearablesNativeAdapter, OpenWearablesNativeBridge } from './OpenWearablesNativeAdapter';
+import {
+  OpenWearablesNativeAdapter,
+  OpenWearablesNativeBridge
+} from './OpenWearablesNativeAdapter';
 
 export class HealthDataConnectionManager {
   private static connections: Map<HealthProviderType, HealthDataConnection> = new Map();
@@ -24,16 +24,10 @@ export class HealthDataConnectionManager {
   ): HealthDataConnection {
     if (!this.connections.has(provider)) {
       if (provider === 'apple_health' || provider === 'health_connect') {
-        this.connections.set(
-          provider,
-          new OpenWearablesNativeAdapter(customBridge, provider)
-        );
+        this.connections.set(provider, new OpenWearablesNativeAdapter(customBridge, provider));
       } else {
         // Cloud wearable fallback adapter
-        this.connections.set(
-          provider,
-          new OpenWearablesNativeAdapter(customBridge, provider)
-        );
+        this.connections.set(provider, new OpenWearablesNativeAdapter(customBridge, provider));
       }
     }
     return this.connections.get(provider)!;
@@ -42,10 +36,7 @@ export class HealthDataConnectionManager {
   /**
    * Registers a custom mock/adapter instance for testing.
    */
-  static registerConnection(
-    provider: HealthProviderType,
-    connection: HealthDataConnection
-  ): void {
+  static registerConnection(provider: HealthProviderType, connection: HealthDataConnection): void {
     this.connections.set(provider, connection);
   }
 

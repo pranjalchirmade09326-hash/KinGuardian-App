@@ -1,4 +1,4 @@
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
 
@@ -14,7 +14,7 @@ export default function IndexRoute() {
   }
 
   if (!isAuthenticated) {
-    return <Redirect href="/(auth)/landing" />;
+    return <Redirect href={Platform.OS === 'web' ? '/(auth)/landing' : '/(auth)/sign-in'} />;
   }
 
   if (user?.role === 'parent') {

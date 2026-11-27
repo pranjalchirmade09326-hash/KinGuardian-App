@@ -30,8 +30,14 @@ export interface AppContextType {
   // --- EMERGENCY CONTACTS MANAGEMENT (M2) ---
   emergencyContacts: EmergencyContact[];
   fetchEmergencyContacts: (userId?: string) => Promise<EmergencyContact[]>;
-  addEmergencyContact: (userId: string, data: EmergencyContactCreate) => Promise<EmergencyContact | null>;
-  updateEmergencyContact: (id: string, data: EmergencyContactUpdate) => Promise<EmergencyContact | null>;
+  addEmergencyContact: (
+    userId: string,
+    data: EmergencyContactCreate
+  ) => Promise<EmergencyContact | null>;
+  updateEmergencyContact: (
+    id: string,
+    data: EmergencyContactUpdate
+  ) => Promise<EmergencyContact | null>;
   deleteEmergencyContact: (id: string) => Promise<boolean>;
 
   // --- ALERTS & INCIDENTS PERSISTENCE (M2) ---
@@ -65,7 +71,15 @@ export interface AppContextType {
   assignCareTask(task: CareTask): void;
   sendFamilyMessage(text: string): void;
   addHealthEvent(event: HealthEvent): void;
-  addParent(payload: { name: string; relationship?: string; city?: string; countryCode?: string; timezone?: string; age?: number; phone?: string; }): Promise<void>;
+  addParent(payload: {
+    name: string;
+    relationship?: string;
+    city?: string;
+    countryCode?: string;
+    timezone?: string;
+    age?: number;
+    phone?: string;
+  }): Promise<void>;
 
   // --- PROTOTYPE NAVIGATION AND UI HELPERS (For compatibility) ---
   coordinatorName: string;

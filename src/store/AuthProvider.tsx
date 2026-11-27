@@ -146,7 +146,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = useCallback(
-    async (email: string, password: string): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
+    async (
+      email: string,
+      password: string
+    ): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
       setIsLoading(true);
       setError(null);
 
@@ -258,7 +261,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           newId = res.data.id;
         }
       } catch (apiErr) {
-        console.warn('AuthProvider: Backend user creation failed, falling back to local registration:', apiErr);
+        console.warn(
+          'AuthProvider: Backend user creation failed, falling back to local registration:',
+          apiErr
+        );
       }
 
       const newAccount: RegisteredAccount = {
@@ -334,7 +340,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const updateProfile = useCallback(
-    async (payload: UpdateProfilePayload): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
+    async (
+      payload: UpdateProfilePayload
+    ): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
       if (!user) {
         return { success: false, error: 'No active session found.' };
       }
@@ -349,9 +357,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         city: payload.city !== undefined ? payload.city : user.city,
         country: payload.country !== undefined ? payload.country : user.country,
         timezone: payload.timezone !== undefined ? payload.timezone : user.timezone,
-        emergency_notes: payload.emergency_notes !== undefined ? payload.emergency_notes : user.emergency_notes,
+        emergency_notes:
+          payload.emergency_notes !== undefined ? payload.emergency_notes : user.emergency_notes,
         blood_group: payload.blood_group !== undefined ? payload.blood_group : user.blood_group,
-        medical_conditions: payload.medical_conditions !== undefined ? payload.medical_conditions : user.medical_conditions,
+        medical_conditions:
+          payload.medical_conditions !== undefined
+            ? payload.medical_conditions
+            : user.medical_conditions,
         allergies: payload.allergies !== undefined ? payload.allergies : user.allergies,
         avatarUrl: payload.avatarUrl !== undefined ? payload.avatarUrl : user.avatarUrl,
         address: payload.address !== undefined ? payload.address : user.address
@@ -386,7 +398,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           updatedUser.avatarUrl = be.avatar_url || updatedUser.avatarUrl;
         }
       } catch (apiErr: any) {
-        console.warn('AuthProvider: Backend update failed, using offline cache:', apiErr?.message || apiErr);
+        console.warn(
+          'AuthProvider: Backend update failed, using offline cache:',
+          apiErr?.message || apiErr
+        );
       }
 
       // 2. Persist to AsyncStorage as offline cache

@@ -26,7 +26,6 @@ export default function ParentDevicesRoute() {
             else if (tab === 'profile') router.push('/(parent)/profile');
           }}
         />
-
       </View>
       <SimulatorControls
         onTriggerNotification={context.handleTriggerSimulation}

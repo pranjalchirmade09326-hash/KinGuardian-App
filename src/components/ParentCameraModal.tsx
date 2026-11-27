@@ -28,8 +28,7 @@ export const ParentCameraModal: React.FC<ParentCameraModalProps> = ({
     name: `${parentName}_Cardiac_Report_Aug18.pdf`,
     category: 'Diagnostic Lab',
     size: '1.8 MB',
-    summary:
-      `${parentName}’s daily telemetry analysis showing occasional mild PVCs, normal resting heart rate averages, and stable post-stent cardiac dynamics. Recommended to maintain Amlodipine dosage.`,
+    summary: `${parentName}’s daily telemetry analysis showing occasional mild PVCs, normal resting heart rate averages, and stable post-stent cardiac dynamics. Recommended to maintain Amlodipine dosage.`,
     findings: [
       'Sinus rhythm at 74 bpm (Stable)',
       'eGFR: 78 mL/min (Optimal kidney clearance)',

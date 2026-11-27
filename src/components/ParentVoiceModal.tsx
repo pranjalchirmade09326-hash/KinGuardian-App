@@ -25,8 +25,7 @@ export const ParentVoiceModal: React.FC<ParentVoiceModalProps> = ({
   const presetQueries = [
     {
       text: 'When is my next doctor appointment?',
-      reply:
-        `${parentName}, your next appointment with Dr. Sharma at Apollo Chennai is tomorrow morning at 10:30 AM IST. Suresh will accompany you.`
+      reply: `${parentName}, your next appointment with Dr. Sharma at Apollo Chennai is tomorrow morning at 10:30 AM IST. Suresh will accompany you.`
     },
     {
       text: 'Did I take my morning medicines today?',
@@ -35,8 +34,7 @@ export const ParentVoiceModal: React.FC<ParentVoiceModalProps> = ({
     },
     {
       text: `Send a note to ${coordName} that I had buttermilk and feel good.`,
-      reply:
-        `I have shared that message with ${coordName}. She will see it on her dashboard in London instantly.`
+      reply: `I have shared that message with ${coordName}. She will see it on her dashboard in London instantly.`
     }
   ];
 

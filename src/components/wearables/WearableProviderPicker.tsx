@@ -104,9 +104,7 @@ export const WearableProviderPicker: React.FC<WearableProviderPickerProps> = ({
             <View className="flex-row items-center flex-1 mr-2">
               <View
                 className={`w-10 h-10 rounded-lg items-center justify-center mr-3 ${
-                  isSelected
-                    ? 'bg-blue-100 dark:bg-blue-900/60'
-                    : 'bg-slate-100 dark:bg-slate-800'
+                  isSelected ? 'bg-blue-100 dark:bg-blue-900/60' : 'bg-slate-100 dark:bg-slate-800'
                 }`}
               >
                 {getProviderIcon(prov.id)}

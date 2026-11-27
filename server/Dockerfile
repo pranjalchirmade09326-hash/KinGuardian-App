@@ -30,6 +30,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     NODE_ENV=production \
     PORT=4000 \
+    PYTHONPATH=/app \
     PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
@@ -43,5 +44,8 @@ COPY --chown=appuser:appuser whatsapp_webhook_server.py ./
 USER appuser
 
 EXPOSE 4000
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:4000/health', timeout=3)" || exit 1
 
 CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "4000"]

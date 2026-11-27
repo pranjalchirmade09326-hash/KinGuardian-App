@@ -91,10 +91,17 @@ def register_exception_handlers(app: FastAPI) -> None:
                     _request_id(request),
                 ),
             )
+        status_code_map = {
+            400: "BAD_REQUEST",
+            401: "UNAUTHORIZED",
+            403: "FORBIDDEN",
+            409: "CONFLICT",
+        }
+        code = status_code_map.get(exc.status_code, "HTTP_ERROR")
         return JSONResponse(
             status_code=exc.status_code,
             content=_error_payload(
-                "HTTP_ERROR",
+                code,
                 str(exc.detail),
                 _request_id(request),
             ),

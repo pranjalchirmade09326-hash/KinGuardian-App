@@ -9,20 +9,10 @@
  */
 
 export type ConnectionStatus =
-  | 'connected'
-  | 'syncing'
-  | 'up_to_date'
-  | 'delayed'
-  | 'error'
-  | 'disconnected';
+  'connected' | 'syncing' | 'up_to_date' | 'delayed' | 'error' | 'disconnected';
 
 export type HealthProviderType =
-  | 'apple_health'
-  | 'health_connect'
-  | 'garmin'
-  | 'oura'
-  | 'fitbit'
-  | 'whoop';
+  'apple_health' | 'health_connect' | 'garmin' | 'oura' | 'fitbit' | 'whoop';
 
 export type HealthDataScope =
   | 'view_wearable_summary'
@@ -56,10 +46,11 @@ export const WEARABLE_ERROR_CODE = {
   WEARABLE_SERVICE_UNAVAILABLE: 'WEARABLE_SERVICE_UNAVAILABLE'
 } as const;
 
-export type WearableErrorCode = typeof WEARABLE_ERROR_CODE[keyof typeof WEARABLE_ERROR_CODE];
+export type WearableErrorCode = (typeof WEARABLE_ERROR_CODE)[keyof typeof WEARABLE_ERROR_CODE];
 
 export const WEARABLE_ERROR_MESSAGES: Record<string, string> = {
-  WEARABLE_SERVICE_UNAVAILABLE: "We couldn't update your health data right now. Your connection is still intact."
+  WEARABLE_SERVICE_UNAVAILABLE:
+    "We couldn't update your health data right now. Your connection is still intact."
 };
 
 export function getWearableErrorMessage(errorCode?: string): string {

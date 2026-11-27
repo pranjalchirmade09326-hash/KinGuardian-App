@@ -9,7 +9,6 @@
  * React Native Screens -> HealthDataConnection -> OpenWearablesNativeAdapter -> Open Wearables RN SDK -> HealthKit / Health Connect
  */
 
-
 import { Platform } from 'react-native';
 import {
   HealthDataConnection,
@@ -36,13 +35,8 @@ export class OpenWearablesNativeAdapter implements HealthDataConnection {
   private errorMessage?: string;
   private bridge: OpenWearablesNativeBridge;
 
-  constructor(
-    customBridge?: OpenWearablesNativeBridge,
-    providerOverride?: HealthProviderType
-  ) {
-    this.provider =
-      providerOverride ||
-      (Platform.OS === 'ios' ? 'apple_health' : 'health_connect');
+  constructor(customBridge?: OpenWearablesNativeBridge, providerOverride?: HealthProviderType) {
+    this.provider = providerOverride || (Platform.OS === 'ios' ? 'apple_health' : 'health_connect');
 
     // Default or injected native SDK bridge
     this.bridge = customBridge || {

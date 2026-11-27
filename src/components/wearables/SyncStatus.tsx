@@ -39,18 +39,16 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
           {status === 'syncing'
             ? 'Syncing telemetry...'
             : status === 'up_to_date'
-            ? 'Up to date'
-            : status === 'connected'
-            ? 'Connected'
-            : status === 'delayed'
-            ? 'Sync Delayed'
-            : 'Sync Needs Attention'}
+              ? 'Up to date'
+              : status === 'connected'
+                ? 'Connected'
+                : status === 'delayed'
+                  ? 'Sync Delayed'
+                  : 'Sync Needs Attention'}
         </Text>
       </View>
 
-      <Text className="text-xs text-slate-500 dark:text-slate-400">
-        {getDisplayTime()}
-      </Text>
+      <Text className="text-xs text-slate-500 dark:text-slate-400">{getDisplayTime()}</Text>
 
       {/* Safety invariant indicator */}
       {!isHealthEvent && (status === 'error' || status === 'delayed') && (

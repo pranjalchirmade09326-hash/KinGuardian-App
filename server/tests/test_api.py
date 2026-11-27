@@ -4,18 +4,20 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
 
 from src.app import app
 from src.db.in_memory_db import InMemoryDb
-from src.db.pool import close_pool, enable_in_memory_fallback
+from src.db.pool import enable_in_memory_fallback
+from whatsapp_webhook_server import CONFIG as WHATSAPP_CONFIG
 from whatsapp_webhook_server import app as whatsapp_app
 
 
 @pytest.fixture(scope="module")
-def client() -> TestClient:
+def client() -> Iterator[TestClient]:
     InMemoryDb.get_instance().reset()
     enable_in_memory_fallback()
     with TestClient(app) as c:
@@ -23,7 +25,7 @@ def client() -> TestClient:
 
 
 @pytest.fixture(scope="module")
-def wa_client() -> TestClient:
+def wa_client() -> Iterator[TestClient]:
     with TestClient(whatsapp_app) as c:
         yield c
 
@@ -312,16 +314,21 @@ def test_whatsapp_webhook_verification_and_health(wa_client: TestClient) -> None
     assert ping.status_code == 200
     assert "Online" in ping.text
 
-    verify = wa_client.get(
-        "/webhook",
-        params={
-            "hub.mode": "subscribe",
-            "hub.verify_token": "kinguardian_verify_secret_2026",
-            "hub.challenge": "123456789",
-        },
-    )
-    assert verify.status_code == 200
-    assert verify.text == "123456789"
+    previous_token = WHATSAPP_CONFIG.WEBHOOK_VERIFY_TOKEN
+    WHATSAPP_CONFIG.WEBHOOK_VERIFY_TOKEN = "kinguardian_verify_secret_2026"
+    try:
+        verify = wa_client.get(
+            "/webhook",
+            params={
+                "hub.mode": "subscribe",
+                "hub.verify_token": "kinguardian_verify_secret_2026",
+                "hub.challenge": "123456789",
+            },
+        )
+        assert verify.status_code == 200
+        assert verify.text == "123456789"
+    finally:
+        WHATSAPP_CONFIG.WEBHOOK_VERIFY_TOKEN = previous_token
 
     health = wa_client.get("/health")
     assert health.status_code == 200

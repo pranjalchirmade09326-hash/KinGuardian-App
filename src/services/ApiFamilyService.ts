@@ -33,21 +33,37 @@ export class ApiFamilyService {
       if (homeData && homeData.subjects && Array.isArray(homeData.subjects)) {
         // Map backend subjects into frontend FamilyMember format
         const backendMembers: FamilyMember[] = homeData.subjects.map((s: any, idx: number) => {
-          const isDad = s.display_name?.toLowerCase().includes('father') || s.relationship?.toLowerCase() === 'father' || idx === 0;
+          const isDad =
+            s.display_name?.toLowerCase().includes('father') ||
+            s.relationship?.toLowerCase() === 'father' ||
+            idx === 0;
           const matchedInitial = this.localMembers.find(
-            (m) => m.id === (isDad ? 'dad' : 'mom') || m.name.toLowerCase() === s.display_name?.toLowerCase()
+            (m) =>
+              m.id === (isDad ? 'dad' : 'mom') ||
+              m.name.toLowerCase() === s.display_name?.toLowerCase()
           );
 
           return {
             id: s.subject_id || (isDad ? 'dad' : 'mom'),
             backendSubjectId: s.subject_id,
             name: matchedInitial?.name || s.display_name || (isDad ? 'Ramesh' : 'Lakshmi'),
-            relation: s.relationship ? s.relationship.charAt(0).toUpperCase() + s.relationship.slice(1) : (isDad ? 'Father' : 'Mother'),
+            relation: s.relationship
+              ? s.relationship.charAt(0).toUpperCase() + s.relationship.slice(1)
+              : isDad
+                ? 'Father'
+                : 'Mother',
             age: matchedInitial?.age || (isDad ? 68 : 64),
             location: `${s.city || 'Chennai'}, India`,
-            avatarUrl: matchedInitial?.avatarUrl || (isDad ? INITIAL_PEOPLE[0].avatarUrl : INITIAL_PEOPLE[1].avatarUrl),
-            wellbeingStatus: s.latest_feeling === 'unwell' || s.latest_feeling === 'critical' ? 'attention' : 'doing-well',
-            currentStatus: s.vital_summary?.blood_pressure ? `BP: ${s.vital_summary.blood_pressure}` : 'Doing well • Vitals stable',
+            avatarUrl:
+              matchedInitial?.avatarUrl ||
+              (isDad ? INITIAL_PEOPLE[0].avatarUrl : INITIAL_PEOPLE[1].avatarUrl),
+            wellbeingStatus:
+              s.latest_feeling === 'unwell' || s.latest_feeling === 'critical'
+                ? 'attention'
+                : 'doing-well',
+            currentStatus: s.vital_summary?.blood_pressure
+              ? `BP: ${s.vital_summary.blood_pressure}`
+              : 'Doing well • Vitals stable',
             lastCheckIn: 'Recently'
           };
         });
@@ -64,7 +80,9 @@ export class ApiFamilyService {
   }
 
   async addParent(payload: AddParentPayload): Promise<FamilyMember> {
-    const isDad = payload.relationship?.toLowerCase().includes('father') || payload.relationship?.toLowerCase().includes('dad');
+    const isDad =
+      payload.relationship?.toLowerCase().includes('father') ||
+      payload.relationship?.toLowerCase().includes('dad');
     const relationName = payload.relationship || (isDad ? 'Father' : 'Mother');
     const fhirId = `synthetic-pat-${Date.now().toString(36)}`;
 
@@ -79,7 +97,10 @@ export class ApiFamilyService {
       });
       console.log('ApiFamilyService: Successfully persisted parent to database:', createdSubject);
     } catch (err) {
-      console.warn('ApiFamilyService: Error persisting parent to backend DB, updating local state:', err);
+      console.warn(
+        'ApiFamilyService: Error persisting parent to backend DB, updating local state:',
+        err
+      );
     }
 
     const newMember: FamilyMember = {
@@ -103,7 +124,10 @@ export class ApiFamilyService {
     return newMember;
   }
 
-  async updateCheckIn(personId: string, status: 'Good' | 'Tired' | 'Unwell'): Promise<FamilyMember> {
+  async updateCheckIn(
+    personId: string,
+    status: 'Good' | 'Tired' | 'Unwell'
+  ): Promise<FamilyMember> {
     // Map person ID to database CareSubject UUID
     let subjectUuid = personId;
     if (personId === 'dad' || personId.toLowerCase().includes('ramesh')) {
@@ -113,9 +137,9 @@ export class ApiFamilyService {
     }
 
     const feelingMapping: Record<string, 'great' | 'good' | 'neutral' | 'unwell' | 'critical'> = {
-      'Good': 'good',
-      'Tired': 'neutral',
-      'Unwell': 'unwell'
+      Good: 'good',
+      Tired: 'neutral',
+      Unwell: 'unwell'
     };
 
     try {
@@ -130,7 +154,9 @@ export class ApiFamilyService {
       console.warn('ApiFamilyService: Error submitting check-in to backend:', err);
     }
 
-    const idx = this.localMembers.findIndex((m) => m.id === personId || m.backendSubjectId === personId);
+    const idx = this.localMembers.findIndex(
+      (m) => m.id === personId || m.backendSubjectId === personId
+    );
     if (idx !== -1) {
       const updated: FamilyMember = {
         ...this.localMembers[idx],

@@ -5,41 +5,79 @@ import { DeviceFrame } from '../../src/components/DeviceFrame';
 import { SimulatorControls } from '../../src/components/SimulatorControls';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Send, Sparkles, FileText, Calendar, MessageCircle } from 'lucide-react-native';
-import { WhatsAppCareHubModal } from '../../src/components/WhatsAppCareHubModal';
+import { AuthContext } from '../../src/store/AuthContext';
+import { ANJALI_USER_ID, RAMESH_USER_ID } from '../../src/store/AuthProvider';
 
 export default function FamilyCommunicationRoute() {
   const context = useContext(AppContext);
+  const auth = useContext(AuthContext);
+  const authUser = auth?.user;
   const router = useRouter();
 
+  const isDemoAccount =
+    !authUser ||
+    authUser.id === ANJALI_USER_ID ||
+    authUser.id === RAMESH_USER_ID ||
+    authUser.email?.toLowerCase() === 'anjali@kinguardian.com' ||
+    authUser.email?.toLowerCase() === 'ramesh@kinguardian.com';
+
   const coordinatorName = context?.coordinatorName || 'Coordinator';
-  const primaryParent = context?.primaryParentName || 'Dad';
+  const primaryParent =
+    context?.familyMembers[0]?.name || (isDemoAccount ? context?.primaryParentName || 'Dad' : 'your parent');
+  const activeParentId =
+    context?.currentPersonId || context?.familyMembers[0]?.id || 'dad';
 
   const [chatInput, setChatInput] = useState('');
-  const [whatsAppHubOpen, setWhatsAppHubOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      sender: coordinatorName,
-      role: 'Primary Coordinator',
-      avatarColor: '#007aff',
-      message: `${primaryParent} has his cardiology appointment tomorrow.`,
-      time: '10:15 AM'
-    },
-    {
-      sender: 'Priya',
-      role: 'Caregiver',
-      avatarColor: '#34c759',
-      message: "I'll take him.",
-      time: '10:18 AM'
-    },
-    {
-      sender: 'KinGuardian',
-      role: 'System Copilot',
-      avatarColor: '#af52de',
-      message: `${primaryParent}'s latest medication and BP summary is ready.`,
-      time: '10:20 AM',
-      isSystem: true
-    }
-  ]);
+  const [messages, setMessages] = useState(() =>
+    isDemoAccount
+      ? [
+          {
+            sender: coordinatorName,
+            role: 'Primary Coordinator',
+            avatarColor: '#007aff',
+            message: `${primaryParent} has his cardiology appointment tomorrow.`,
+            time: '10:15 AM'
+          },
+          {
+            sender: 'Priya',
+            role: 'Caregiver',
+            avatarColor: '#34c759',
+            message: "I'll take him.",
+            time: '10:18 AM'
+          },
+          {
+            sender: 'KinGuardian',
+            role: 'System Copilot',
+            avatarColor: '#af52de',
+            message: `${primaryParent}'s latest medication and BP summary is ready.`,
+            time: '10:20 AM',
+            isSystem: true
+          }
+        ]
+      : [
+          {
+            sender: 'Priya',
+            role: 'Caregiver',
+            avatarColor: '#34c759',
+            message:
+              context && context.familyMembers.length > 0
+                ? `Hi ${coordinatorName.split(' ')[0]}, I checked in on ${primaryParent} today — vitals and lunch are all good.`
+                : `Hi ${coordinatorName.split(' ')[0]}, I'm your local caregiver Priya. Add your parents anytime to start coordinating!`,
+            time: '10:18 AM'
+          },
+          {
+            sender: 'KinGuardian',
+            role: 'System Copilot',
+            avatarColor: '#af52de',
+            message:
+              context && context.familyMembers.length > 0
+                ? `${primaryParent}'s care circle chat is ready. Use WhatsApp Hub anytime to send morning digests or pill reminders.`
+                : 'Welcome to your Family Chat! Add a parent or open WhatsApp Hub to start coordinating care.',
+            time: 'Just now',
+            isSystem: true
+          }
+        ]
+  );
 
   if (!context) return null;
 
@@ -81,9 +119,9 @@ export default function FamilyCommunicationRoute() {
             </View>
           </View>
 
-          {/* Direct WhatsApp Hub Trigger Button */}
+          {/* Direct WhatsApp Hub Page Navigation */}
           <TouchableOpacity
-            onPress={() => setWhatsAppHubOpen(true)}
+            onPress={() => router.push('/(coordinator)/whatsapp')}
             activeOpacity={0.85}
             className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] active:opacity-90 shadow-sm"
           >
@@ -97,7 +135,7 @@ export default function FamilyCommunicationRoute() {
           <View className="space-y-4 pb-28">
             {/* WhatsApp Care Hub Quick Banner */}
             <TouchableOpacity
-              onPress={() => setWhatsAppHubOpen(true)}
+              onPress={() => router.push('/(coordinator)/whatsapp')}
               activeOpacity={0.85}
               className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex-row items-center justify-between shadow-xs"
             >
@@ -106,11 +144,9 @@ export default function FamilyCommunicationRoute() {
                   <MessageCircle size={18} color="#ffffff" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-xs font-bold text-emerald-950">
-                    WhatsApp Care Hub
-                  </Text>
+                  <Text className="text-xs font-bold text-emerald-950">WhatsApp Care Hub</Text>
                   <Text className="text-[11px] text-emerald-700 font-medium">
-                    Send digests, vital alerts & pill reminders directly to Dad
+                    Send digests, vital alerts &amp; pill reminders directly to {primaryParent}
                   </Text>
                 </View>
               </View>
@@ -139,7 +175,7 @@ export default function FamilyCommunicationRoute() {
                     {/* Special In-bubble CTA Buttons */}
                     <View className="flex-row gap-2 pt-1">
                       <TouchableOpacity
-                        onPress={() => router.push('/parent/dad/summary')}
+                        onPress={() => router.push(`/parent/${activeParentId}/summary` as any)}
                         className="flex-1 bg-white border border-neutral-200 py-2.5 rounded-xl flex-row items-center justify-center gap-1 active:opacity-90 shadow-xs"
                       >
                         <FileText size={10} color="#af52de" />
@@ -148,7 +184,7 @@ export default function FamilyCommunicationRoute() {
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => router.push('/parent/dad/prepare')}
+                        onPress={() => router.push(`/parent/${activeParentId}/prepare` as any)}
                         className="flex-1 bg-white border border-neutral-200 py-2.5 rounded-xl flex-row items-center justify-center gap-1 active:opacity-90 shadow-xs"
                       >
                         <Calendar size={10} color="#af52de" />
@@ -210,6 +246,8 @@ export default function FamilyCommunicationRoute() {
             placeholderTextColor="#8e8e93"
             value={chatInput}
             onChangeText={setChatInput}
+            onSubmitEditing={handleSendMessage}
+            returnKeyType="send"
             className="flex-1 bg-neutral-100 border border-neutral-200/50 rounded-full px-4 py-2.5 text-xs text-neutral-800 font-semibold"
           />
           <TouchableOpacity
@@ -219,26 +257,6 @@ export default function FamilyCommunicationRoute() {
             <Send size={12} color="#ffffff" />
           </TouchableOpacity>
         </View>
-
-        <WhatsAppCareHubModal
-          visible={whatsAppHubOpen}
-          onClose={() => setWhatsAppHubOpen(false)}
-          defaultRecipientName={context.primaryParentName}
-          defaultPhone="9270756299"
-          onSimulatedReply={(reply) => {
-            setMessages((prev) => [
-              ...prev,
-              {
-                sender: reply.senderName,
-                role: 'WhatsApp Incoming',
-                avatarColor: '#25D366',
-                message: reply.messageText,
-                time: reply.receivedAt
-              }
-            ]);
-            context.showToast('WhatsApp reply received from Dad!');
-          }}
-        />
       </View>
       <SimulatorControls
         onTriggerNotification={context.handleTriggerSimulation}

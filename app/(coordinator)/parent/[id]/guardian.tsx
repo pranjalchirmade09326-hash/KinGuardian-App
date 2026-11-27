@@ -135,9 +135,10 @@ export default function GuardianMomentRoute() {
             </Text>
             <View className="bg-white border border-[#e2dfd9] rounded-3xl p-5 shadow-sm">
               <Text className="text-xs text-slate-600 leading-relaxed font-semibold">
-                {parentName}'s smart sensor activity logged a decline from 5,800 steps to 2,100 steps.
-                Concurrently, outdoor local temperatures in Chennai peaked at 38°C, indicating {isDad ? 'he' : 'she'} is
-                likely resting indoors to avoid heat exhaustion. Adherence checklist remains stable.
+                {parentName}'s smart sensor activity logged a decline from 5,800 steps to 2,100
+                steps. Concurrently, outdoor local temperatures in Chennai peaked at 38°C,
+                indicating {isDad ? 'he' : 'she'} is likely resting indoors to avoid heat
+                exhaustion. Adherence checklist remains stable.
               </Text>
             </View>
           </View>

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +14,7 @@ from src.middleware.errors import register_exception_handlers
 from src.middleware.logging_middleware import CorrelationAndLoggingMiddleware
 from src.routes import api_v1_router
 from src.routes.health import health_router
+from whatsapp_webhook_server import whatsapp_compat_router, whatsapp_router
 
 logger = logging.getLogger("kinguardian.app")
 
@@ -23,7 +24,11 @@ async def lifespan(_app: FastAPI):
     try:
         health = await check_health()
         if health["connected"]:
-            logger.info("[DB] Database ready (%.2fms)", health.get("latency_ms", 0))
+            logger.info(
+                "[DB] Database ready (mode=%s, %.2fms)",
+                health.get("mode", "postgresql"),
+                health.get("latency_ms", 0),
+            )
         else:
             logger.warning(
                 "[DB] PostgreSQL not immediately reachable: %s", health.get("error")
@@ -45,21 +50,23 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    allow_origins = ["*"] if config.cors_origin == "*" else [config.cors_origin]
+    app.add_middleware(CorrelationAndLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allow_origins,
-        allow_credentials=True,
+        allow_origins=config.cors_origins,
+        allow_credentials=config.cors_allow_credentials,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
         expose_headers=["X-Request-ID"],
     )
-    app.add_middleware(CorrelationAndLoggingMiddleware)
 
     register_exception_handlers(app)
 
     app.include_router(health_router)
     app.include_router(api_v1_router)
+    app.include_router(whatsapp_router, prefix="/api/v1/whatsapp")
+    app.include_router(whatsapp_router, prefix="/whatsapp", include_in_schema=False)
+    app.include_router(whatsapp_compat_router)
 
     return app
 

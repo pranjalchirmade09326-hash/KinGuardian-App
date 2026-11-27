@@ -33,8 +33,9 @@ export const WearableConnectionCard: React.FC<WearableConnectionCardProps> = ({
   isCoordinatorView = false
 }) => {
   const isErrorOrDelayed = device.status === 'error' || device.status === 'delayed';
-  const displayTitle = device.rolePerspectiveTitle || (isCoordinatorView ? `Dad's ${device.deviceName}` : device.deviceName);
-
+  const displayTitle =
+    device.rolePerspectiveTitle ||
+    (isCoordinatorView ? `Dad's ${device.deviceName}` : device.deviceName);
 
   return (
     <TouchableOpacity
@@ -53,7 +54,6 @@ export const WearableConnectionCard: React.FC<WearableConnectionCardProps> = ({
               {displayTitle}
             </Text>
             <Text className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-
               {device.provider.replace('_', ' ')}
             </Text>
           </View>

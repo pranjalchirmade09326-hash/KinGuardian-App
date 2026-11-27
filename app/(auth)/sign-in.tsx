@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  useWindowDimensions,
+  Platform,
+  KeyboardAvoidingView
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Heart, ArrowLeft, Eye, EyeOff, AlertCircle, Compass } from 'lucide-react-native';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -7,6 +18,9 @@ import { signInSchema } from '../../src/utils/validation';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const isSmallMobile = width < 380;
   const { signIn, quickSignIn, error: authError, clearError } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -53,27 +67,87 @@ export default function SignInScreen() {
   };
 
   const displayError = validationError || authError;
+  const isWeb = Platform.OS === 'web';
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* Top Bar */}
-      <View className="px-6 py-4 flex-row items-center justify-between border-b border-neutral-100">
-        <TouchableOpacity
-          onPress={() => router.push('/(auth)/landing')}
-          className="p-1.5 rounded-full active:bg-neutral-100 -ml-1.5"
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDesktop ? '#f8fafc' : '#ffffff' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          style={{ flex: 1, backgroundColor: isDesktop ? '#f8fafc' : '#ffffff' }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: 40,
+            ...(isDesktop
+              ? {
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingVertical: 40,
+                  paddingHorizontal: 24
+                }
+              : {})
+          }}
         >
-          <ArrowLeft size={20} color="#1c1c1e" />
-        </TouchableOpacity>
-        <View className="flex-row items-center gap-2">
-          <View className="w-7 h-7 rounded-lg bg-[#007aff] items-center justify-center">
-            <Heart size={16} color="#ffffff" />
+      <View
+        style={{
+          width: '100%',
+          ...(isDesktop
+            ? {
+                maxWidth: 460,
+                backgroundColor: '#ffffff',
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: '#e2e8f0',
+                shadowColor: '#000',
+                shadowOpacity: 0.06,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: 10 },
+                overflow: 'hidden'
+              }
+            : {})
+        }}
+      >
+        {/* Top Bar */}
+        <View
+          style={{ paddingHorizontal: isSmallMobile ? 16 : 24, paddingVertical: 16 }}
+          className="flex-row items-center justify-between border-b border-neutral-100"
+        >
+          {isWeb ? (
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/landing')}
+              className="p-1.5 rounded-full active:bg-neutral-100 -ml-1.5"
+            >
+              <ArrowLeft size={20} color="#1c1c1e" />
+            </TouchableOpacity>
+          ) : (
+            <View className="w-7" />
+          )}
+          <View className="flex-row items-center gap-2">
+            <View className="w-7 h-7 rounded-lg bg-[#007aff] items-center justify-center">
+              <Heart size={16} color="#ffffff" />
+            </View>
+            <Text className="text-base font-extrabold text-neutral-900">KinGuardian</Text>
           </View>
-          <Text className="text-base font-extrabold text-neutral-900">KinGuardian</Text>
+          <View className="w-7" />
         </View>
-        <View className="w-7" />
-      </View>
 
-      <View className="px-6 pt-8 pb-4">
+        <View style={{ paddingHorizontal: isSmallMobile ? 16 : 24, paddingTop: isDesktop ? 24 : 20, paddingBottom: isDesktop ? 28 : 16 }}>
+        {/* Mobile/Web Auth Mode Switcher */}
+        <View className="flex-row bg-neutral-100 p-1 rounded-xl mb-5">
+          <View className="flex-1 bg-white py-2 rounded-lg items-center shadow-xs">
+            <Text className="text-xs font-bold text-[#007aff]">Sign In</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.replace('/(auth)/sign-up')}
+            activeOpacity={0.8}
+            className="flex-1 py-2 rounded-lg items-center"
+          >
+            <Text className="text-xs font-semibold text-neutral-500">Sign Up</Text>
+          </TouchableOpacity>
+        </View>
         <Text className="text-2xl font-extrabold text-neutral-900 tracking-tight">
           Welcome back
         </Text>
@@ -165,7 +239,9 @@ export default function SignInScreen() {
             >
               <View>
                 <Text className="text-xs font-bold text-neutral-900">Anjali Sharma (London)</Text>
-                <Text className="text-[10px] text-neutral-400">Coordinator · anjali@kinguardian.com</Text>
+                <Text className="text-[10px] text-neutral-400">
+                  Coordinator · anjali@kinguardian.com
+                </Text>
               </View>
               <Text className="text-xs font-bold text-[#007aff]">Sign In &rarr;</Text>
             </TouchableOpacity>
@@ -176,7 +252,9 @@ export default function SignInScreen() {
             >
               <View>
                 <Text className="text-xs font-bold text-neutral-900">Ramesh Sharma (Chennai)</Text>
-                <Text className="text-[10px] text-neutral-400">Father · ramesh@kinguardian.com</Text>
+                <Text className="text-[10px] text-neutral-400">
+                  Father · ramesh@kinguardian.com
+                </Text>
               </View>
               <Text className="text-xs font-bold text-[#ff9500]">Sign In &rarr;</Text>
             </TouchableOpacity>
@@ -219,7 +297,10 @@ export default function SignInScreen() {
             <Text className="text-xs font-bold text-[#007aff]">Sign Up</Text>
           </TouchableOpacity>
         </View>
+        </View>
       </View>
     </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

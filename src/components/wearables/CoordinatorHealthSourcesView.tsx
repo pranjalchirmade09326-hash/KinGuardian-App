@@ -87,7 +87,6 @@ export const CoordinatorHealthSourcesView: React.FC<CoordinatorHealthSourcesView
   onConnectProvider,
   onRefreshSource: _onRefreshSource
 }) => {
-
   const [selectedSource, setSelectedSource] = useState<CoordinatorHealthSourceItem | null>(null);
 
   const handleSourceTap = (source: CoordinatorHealthSourceItem) => {
@@ -271,9 +270,7 @@ export const CoordinatorHealthSourcesView: React.FC<CoordinatorHealthSourcesView
               onPress={() => setSelectedSource(null)}
               className="w-full bg-slate-900 dark:bg-slate-100 py-3.5 rounded-xl items-center"
             >
-              <Text className="text-sm font-bold text-white dark:text-slate-900">
-                Done
-              </Text>
+              <Text className="text-sm font-bold text-white dark:text-slate-900">Done</Text>
             </TouchableOpacity>
           </View>
         </View>

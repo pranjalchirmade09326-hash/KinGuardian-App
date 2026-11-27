@@ -42,9 +42,7 @@ export const PermissionSummary: React.FC<PermissionSummaryProps> = ({
   return (
     <View className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-sm font-bold text-slate-900 dark:text-slate-100">
-          {title}
-        </Text>
+        <Text className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</Text>
         <Shield size={16} color="#64748b" />
       </View>
 

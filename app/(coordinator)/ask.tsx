@@ -6,6 +6,7 @@ import { DeviceFrame } from '../../src/components/DeviceFrame';
 import { SimulatorControls } from '../../src/components/SimulatorControls';
 import { useRouter } from 'expo-router';
 import { formatAIResponse, generateIntelligentHealthcareAnswer } from '../../src/utils/aiFormatter';
+import { CONFIG } from '../../src/constants/config';
 import {
   Sparkles,
   Mic,
@@ -47,9 +48,9 @@ export default function CoordinatorAskRoute() {
 
   if (!context) return null;
 
-  const handleAsk = (customQuery?: string) => {
+  const handleAsk = async (customQuery?: string) => {
     const activeQuery = customQuery || query;
-    if (!activeQuery.trim()) return;
+    if (!activeQuery.trim() || loading) return;
 
     const userMsg: ChatMessageItem = {
       id: `msg-${Date.now()}-user`,
@@ -63,31 +64,59 @@ export default function CoordinatorAskRoute() {
     }
     setLoading(true);
 
-    // Simulated network delay
-    setTimeout(() => {
-      setLoading(false);
-      const generated = generateIntelligentHealthcareAnswer(
+    const subjectName =
+      context.people.find((p) => p.id === context.currentPersonId)?.name ||
+      context.people[0]?.name ||
+      'your parent';
+
+    let rawResult: any = null;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(`${CONFIG.apiUrl}/api/v1/ai/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          query: activeQuery,
+          patientName: subjectName,
+          currentBP: context.currentBP || '120/80 mmHg'
+        })
+      });
+      if (response.ok) {
+        const jsonRes = await response.json();
+        rawResult = jsonRes.data || jsonRes;
+      }
+    } catch {
+      // Backend unreachable or timed out; fall back to local clinical engine
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!rawResult) {
+      rawResult = generateIntelligentHealthcareAnswer(
         activeQuery,
-        context.primaryParentName || 'Dad',
+        subjectName,
         context.currentBP
       );
-      const formatted = formatAIResponse(generated);
+    }
 
-      const aiSources: ChatSource[] = formatted.citations.map((c) => ({
-        title: 'Clinical Telemetry',
-        detail: c
-      }));
+    const formatted = formatAIResponse(rawResult);
+    const aiSources: ChatSource[] = formatted.citations.map((c) => ({
+      title: 'Clinical Telemetry',
+      detail: c
+    }));
 
-      const aiMsg: ChatMessageItem = {
-        id: `msg-${Date.now()}-ai`,
-        sender: 'kinguardian',
-        text: formatted.answer,
-        sources: aiSources,
-        suggestedActions: formatted.suggestedFollowUps
-      };
+    const aiMsg: ChatMessageItem = {
+      id: `msg-${Date.now()}-ai`,
+      sender: 'kinguardian',
+      text: formatted.answer,
+      sources: aiSources,
+      suggestedActions: formatted.suggestedFollowUps
+    };
 
-      setMessages((prev) => [...prev, aiMsg]);
-    }, 600);
+    setLoading(false);
+    setMessages((prev) => [...prev, aiMsg]);
   };
 
   const quickPrompts = [
@@ -104,12 +133,20 @@ export default function CoordinatorAskRoute() {
         {/* Header Title */}
         <View className="px-6 py-5 border-b border-neutral-100 bg-white flex-row items-center justify-between">
           <View>
-            <Text className="text-xl font-bold text-neutral-900 tracking-tight">Ask KinGuardian</Text>
+            <Text className="text-xl font-bold text-neutral-900 tracking-tight">
+              Ask KinGuardian
+            </Text>
             <Text className="text-xs text-neutral-400 font-semibold mt-0.5">
-              Ask anything about Mom & Dad
+              Ask anything about your family's health &amp; care
             </Text>
           </View>
           <Sparkles size={20} color="#af52de" fill="#af52de" />
+        </View>
+
+        <View className="px-5 pt-2">
+          <Text className="text-[10px] text-neutral-400 font-semibold text-center">
+            AI summaries use authorized family telemetry and are not a clinical diagnosis.
+          </Text>
         </View>
 
         <ScrollView className="flex-1 px-5 pt-4 space-y-5">
@@ -194,7 +231,13 @@ export default function CoordinatorAskRoute() {
                           <TouchableOpacity
                             key={aIdx}
                             onPress={() => {
-                              if (action === 'Call Dad' || action === `Call ${context.primaryParentName}` || action.toLowerCase().includes(context.primaryParentName.toLowerCase())) {
+                              if (
+                                action === 'Call Dad' ||
+                                action === `Call ${context.primaryParentName}` ||
+                                action
+                                  .toLowerCase()
+                                  .includes(context.primaryParentName.toLowerCase())
+                              ) {
                                 context.setCheckInOpen(true);
                               } else if (
                                 action === 'View medication' ||

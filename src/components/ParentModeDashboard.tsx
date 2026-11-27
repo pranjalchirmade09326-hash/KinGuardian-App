@@ -1,5 +1,12 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   MessageSquare,
@@ -9,14 +16,16 @@ import {
   CheckCircle2,
   Radio,
   Heart,
-  Flame,
-  RefreshCw
+  RefreshCw,
+  Footprints,
+  Moon
 } from 'lucide-react-native';
 
 import { HealthRecordItem } from '../types';
 import { t } from '../i18n';
 import { AppContext } from '../store/AppContext';
 import { RAMESH_USER_ID } from '../store/AuthProvider';
+import { healthConnectService } from '../services/HealthConnectService';
 
 interface ParentModeDashboardProps {
   onSwitchMode: () => void;
@@ -52,23 +61,40 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
 
   // Google Fit Live Telemetry States
   const [fitStepCount, setFitStepCount] = useState(4891);
-  const [fitHeartRate, setFitHeartRate] = useState(73);
-  const [fitActiveCalories, setFitActiveCalories] = useState(352);
-  const [fitMoveMinutes, setFitMoveMinutes] = useState(41);
+  const [fitBP, setFitBP] = useState(
+    context?.currentBP ? context.currentBP.replace(' mmHg', '').trim() : '120/80'
+  );
+  const [fitSleepHours, setFitSleepHours] = useState('7.5');
+  const [fitHeartRate, setFitHeartRate] = useState(72);
   const [isFitSyncing, setIsFitSyncing] = useState(false);
   const [fitLastUpdated, setFitLastUpdated] = useState('Just now');
 
-  const handleSyncFitData = () => {
+  const handleSyncFitData = async () => {
     setIsFitSyncing(true);
-    setTimeout(() => {
-      setIsFitSyncing(false);
+    try {
+      const targetSubject =
+        context?.people.find((p) => p.id === context.currentPersonId) || context?.people[0];
+      const snapshot = await healthConnectService.syncLiveTelemetry({
+        subjectId: targetSubject?.backendSubjectId,
+        currentSteps: fitStepCount,
+        currentBP: fitBP,
+        currentSleepHours: fitSleepHours,
+        currentHeartRate: fitHeartRate,
+        provider: 'Google Fit (Health Connect)'
+      });
+      setFitStepCount(snapshot.steps);
+      setFitBP(snapshot.bp);
+      setFitSleepHours(snapshot.sleepHours);
+      setFitHeartRate(snapshot.heartRate);
       setFitLastUpdated('Just now');
-      setFitStepCount((prev) => prev + Math.floor(Math.random() * 25) + 5);
-      setFitHeartRate(72 + Math.floor(Math.random() * 4));
-      setFitActiveCalories((prev) => prev + 5);
-      setFitMoveMinutes((prev) => prev + 1);
-      context?.showToast('Google Fit live telemetry synchronized!');
-    }, 1000);
+      context?.showToast(
+        snapshot.nativeHealthConnectUsed
+          ? 'Live Google Fit / Health Connect data synced!'
+          : 'Google Fit live telemetry synchronized!'
+      );
+    } finally {
+      setIsFitSyncing(false);
+    }
   };
 
   const fitStepProgress = Math.min(Math.round((fitStepCount / 6000) * 100), 100);
@@ -88,12 +114,16 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
         finalNote.toLowerCase().includes('uncomfortable')
       ) {
         setIsUrgent(true);
-        context?.createAlert({
-          userId: RAMESH_USER_ID,
-          type: 'general_emergency',
-          severity: 'critical',
-          description: finalNote ? `Parent check-in: ${finalNote}` : 'Parent Ramesh reported feeling Unwell.'
-        }).catch((err) => console.warn('ParentModeDashboard: createAlert failed:', err));
+        context
+          ?.createAlert({
+            userId: RAMESH_USER_ID,
+            type: 'general_emergency',
+            severity: 'critical',
+            description: finalNote
+              ? `Parent check-in: ${finalNote}`
+              : 'Parent Ramesh reported feeling Unwell.'
+          })
+          .catch((err) => console.warn('ParentModeDashboard: createAlert failed:', err));
       } else {
         setIsUrgent(false);
       }
@@ -134,7 +164,9 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
             onPress={onSwitchMode}
             className="bg-neutral-100 px-3 py-2 rounded-xl active:scale-95"
           >
-            <Text className="text-[#007aff] font-bold text-xs">{context?.coordinatorName?.split(' ')[0] || 'Family'}'s View</Text>
+            <Text className="text-[#007aff] font-bold text-xs">
+              {context?.coordinatorName?.split(' ')[0] || 'Family'}'s View
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -159,7 +191,8 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
           {hasCheckInRequest && (
             <View className="bg-blue-50/50 p-4 rounded-xl flex-row items-center gap-3">
               <Text className="text-xs font-semibold text-[#007aff] flex-1 leading-relaxed">
-                📢 {context?.coordinatorName?.split(' ')[0] || 'Family'} sent you a check-in request. Let them know how you are feeling today.
+                📢 {context?.coordinatorName?.split(' ')[0] || 'Family'} sent you a check-in
+                request. Let them know how you are feeling today.
               </Text>
             </View>
           )}
@@ -297,13 +330,15 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
 
                   <TouchableOpacity
                     onPress={() => {
-                      context?.createAlert({
-                        userId: RAMESH_USER_ID,
-                        type: 'sos_panic',
-                        severity: 'critical',
-                        description: 'Emergency SOS (108) triggered by parent in Chennai',
-                        location_name: 'Chennai, India'
-                      }).catch((err) => console.warn('createAlert SOS error:', err));
+                      context
+                        ?.createAlert({
+                          userId: RAMESH_USER_ID,
+                          type: 'sos_panic',
+                          severity: 'critical',
+                          description: 'Emergency SOS (108) triggered by parent in Chennai',
+                          location_name: 'Chennai, India'
+                        })
+                        .catch((err) => console.warn('createAlert SOS error:', err));
                       context?.showToast('Emergency SOS recorded & dispatched to Care Circle!');
                       alert('Dialing India Emergency Response: 108');
                     }}
@@ -358,7 +393,11 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
                 <Text className="text-white font-bold text-xs">Yes, I took it</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => alert(`Please take it before sleep. Alert synced with ${context?.coordinatorName || 'Family'}.`)}
+                onPress={() =>
+                  alert(
+                    `Please take it before sleep. Alert synced with ${context?.coordinatorName || 'Family'}.`
+                  )
+                }
                 className="w-1/3 py-3 bg-neutral-100 rounded-2xl items-center justify-center active:scale-95"
               >
                 <Text className="text-neutral-500 font-bold text-xs">Not yet</Text>
@@ -435,9 +474,7 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
                   <Activity size={28} color="#007aff" />
                 </View>
                 <View>
-                  <Text className="text-lg font-black text-neutral-900">
-                    Google Fit
-                  </Text>
+                  <Text className="text-lg font-black text-neutral-900">Google Fit</Text>
                   <View className="flex-row items-center gap-1.5 mt-0.5">
                     <View className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                     <Text className="text-xs font-bold text-emerald-700">
@@ -462,9 +499,7 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
                   </Text>
                 </View>
                 <View className="bg-emerald-100 px-2 py-0.5 rounded-full">
-                  <Text className="text-[9px] font-bold text-emerald-800 uppercase">
-                    Streaming
-                  </Text>
+                  <Text className="text-[9px] font-bold text-emerald-800 uppercase">Streaming</Text>
                 </View>
               </View>
 
@@ -485,38 +520,61 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
                 </View>
               </View>
 
-              {/* 3 Metrics Row */}
-              <View className="flex-row gap-2 pt-1">
-                {/* Heart Rate */}
-                <View className="flex-1 bg-white p-2.5 rounded-xl border border-blue-100/80 items-center">
+              {/* 4 Metrics Grid: Steps, BP, Sleep, Heart Rate (HR) */}
+              <View className="flex-row flex-wrap gap-2 pt-1">
+                {/* Steps */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-2.5 rounded-xl border border-blue-100/80 items-center"
+                >
+                  <Footprints size={15} color="#007aff" />
+                  <Text className="text-sm font-black text-neutral-900 mt-1">
+                    {fitStepCount.toLocaleString()}
+                  </Text>
+                  <Text className="text-[8px] font-bold text-neutral-500 uppercase mt-0.5">
+                    Steps
+                  </Text>
+                </View>
+
+                {/* Blood Pressure (BP) */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-2.5 rounded-xl border border-blue-100/80 items-center"
+                >
                   <Heart size={15} color="#e11d48" />
                   <Text className="text-sm font-black text-neutral-900 mt-1">
-                    {fitHeartRate} <Text className="text-[9px] text-neutral-400 font-bold">BPM</Text>
+                    {fitBP} <Text className="text-[9px] text-neutral-400 font-bold">mmHg</Text>
+                  </Text>
+                  <Text className="text-[8px] font-bold text-neutral-500 uppercase mt-0.5">BP</Text>
+                </View>
+
+                {/* Sleep Hours */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-2.5 rounded-xl border border-blue-100/80 items-center"
+                >
+                  <Moon size={15} color="#6366f1" />
+                  <Text className="text-sm font-black text-neutral-900 mt-1">
+                    {fitSleepHours}{' '}
+                    <Text className="text-[9px] text-neutral-400 font-bold">hrs</Text>
                   </Text>
                   <Text className="text-[8px] font-bold text-neutral-500 uppercase mt-0.5">
-                    Resting Pulse
+                    Sleep
                   </Text>
                 </View>
 
-                {/* Move Minutes */}
-                <View className="flex-1 bg-white p-2.5 rounded-xl border border-blue-100/80 items-center">
+                {/* Heart Rate (HR) */}
+                <View
+                  style={{ width: '48%' }}
+                  className="bg-white p-2.5 rounded-xl border border-blue-100/80 items-center"
+                >
                   <Activity size={15} color="#059669" />
                   <Text className="text-sm font-black text-neutral-900 mt-1">
-                    {fitMoveMinutes} <Text className="text-[9px] text-neutral-400 font-bold">min</Text>
+                    {fitHeartRate}{' '}
+                    <Text className="text-[9px] text-neutral-400 font-bold">BPM</Text>
                   </Text>
                   <Text className="text-[8px] font-bold text-neutral-500 uppercase mt-0.5">
-                    Active Time
-                  </Text>
-                </View>
-
-                {/* Calories */}
-                <View className="flex-1 bg-white p-2.5 rounded-xl border border-blue-100/80 items-center">
-                  <Flame size={15} color="#ea580c" />
-                  <Text className="text-sm font-black text-neutral-900 mt-1">
-                    {fitActiveCalories} <Text className="text-[9px] text-neutral-400 font-bold">kcal</Text>
-                  </Text>
-                  <Text className="text-[8px] font-bold text-neutral-500 uppercase mt-0.5">
-                    Burned
+                    Heart Rate (HR)
                   </Text>
                 </View>
               </View>
@@ -536,9 +594,7 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
                 <Text className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
                   Last Updated
                 </Text>
-                <Text className="text-xs font-black text-neutral-800 mt-0.5">
-                  {fitLastUpdated}
-                </Text>
+                <Text className="text-xs font-black text-neutral-800 mt-0.5">{fitLastUpdated}</Text>
               </View>
             </View>
 
@@ -553,9 +609,7 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
               ) : (
                 <>
                   <RefreshCw size={16} color="#ffffff" />
-                  <Text className="text-sm font-bold text-white">
-                    Sync Live Google Fit Data
-                  </Text>
+                  <Text className="text-sm font-bold text-white">Sync Live Google Fit Data</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -571,10 +625,8 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
           </View>
         </View>
 
-
         <View className="h-28" />
       </View>
     </ScrollView>
-
   );
 };

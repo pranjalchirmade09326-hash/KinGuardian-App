@@ -29,8 +29,7 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
   };
 
   const isSolid = variant === 'solid';
-  const sizeClasses =
-    size === 'sm' ? 'py-1.5 px-3' : size === 'lg' ? 'py-3.5 px-6' : 'py-2.5 px-4';
+  const sizeClasses = size === 'sm' ? 'py-1.5 px-3' : size === 'lg' ? 'py-3.5 px-6' : 'py-2.5 px-4';
   const textClasses =
     size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-base font-bold' : 'text-sm font-semibold';
   const iconSize = size === 'sm' ? 14 : size === 'lg' ? 20 : 18;
@@ -44,9 +43,7 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
       } ${sizeClasses} ${className}`}
     >
       <MessageCircle size={iconSize} color={isSolid ? '#ffffff' : '#25D366'} />
-      <Text className={`${textClasses} ${isSolid ? 'text-white' : 'text-[#128C7E]'}`}>
-        {label}
-      </Text>
+      <Text className={`${textClasses} ${isSolid ? 'text-white' : 'text-[#128C7E]'}`}>{label}</Text>
     </TouchableOpacity>
   );
 };
