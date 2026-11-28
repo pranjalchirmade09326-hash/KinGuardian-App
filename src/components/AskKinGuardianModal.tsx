@@ -110,7 +110,7 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
           body: JSON.stringify({
             query: text,
             patientName: subjectName,
-            currentBP: '138/88 mmHg'
+            currentBP: context?.currentBP || '138/88 mmHg'
           })
         });
         if (response.ok) {
@@ -124,7 +124,11 @@ export const AskKinGuardianModal: React.FC<AskKinGuardianModalProps> = ({
       }
 
       if (!rawResult) {
-        rawResult = generateIntelligentHealthcareAnswer(text, subjectName);
+        rawResult = generateIntelligentHealthcareAnswer(
+          text,
+          subjectName,
+          context?.currentBP || '138/88 mmHg'
+        );
       }
 
       // Format response to guarantee 100% human-readable natural language (ZERO raw JSON)

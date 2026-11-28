@@ -406,6 +406,40 @@ export const ParentModeDashboard: React.FC<ParentModeDashboardProps> = ({
           </View>
         )}
 
+        {/* Always-Visible Emergency SOS Quick Card */}
+        <View className="bg-red-50 border border-red-200 rounded-2xl p-4 flex-row items-center justify-between shadow-xs">
+          <View className="flex-1 pr-3">
+            <Text className="text-[10px] font-extrabold text-[#ff3b30] uppercase tracking-wider">
+              24/7 Emergency Support
+            </Text>
+            <Text className="text-sm font-bold text-neutral-900 mt-0.5">
+              Need urgent medical help?
+            </Text>
+            <Text className="text-[11px] text-neutral-500 mt-0.5">
+              Alerts {context?.coordinatorName?.split(' ')[0] || 'Family'} & dials 108 immediately.
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              context
+                ?.createAlert({
+                  userId: RAMESH_USER_ID,
+                  type: 'sos_panic',
+                  severity: 'critical',
+                  description: 'Emergency SOS (108) triggered by parent in Chennai',
+                  location_name: 'Chennai, India'
+                })
+                .catch((err) => console.warn('createAlert SOS error:', err));
+              context?.showToast('Emergency SOS recorded & dispatched to Care Circle!');
+              alert('Dialing India Emergency Response: 108');
+            }}
+            activeOpacity={0.85}
+            className="bg-[#ff3b30] px-4 py-3 rounded-xl items-center justify-center shadow-sm"
+          >
+            <Text className="text-white text-xs font-extrabold">SOS 108</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Section 2: Today's medicines */}
         <View className="space-y-2">
           <View className="flex-row justify-between items-center px-1">

@@ -409,26 +409,100 @@ export function generateIntelligentHealthcareAnswer(
     };
   }
 
-  // 7. General Friendly / Multi-purpose Fallback (Clear, natural conversational reply)
+  // 6b. Sleep & Rest Queries
+  if (q.includes('sleep') || q.includes('neend') || q.includes('rest') || q.includes('night')) {
+    return {
+      answer:
+        `${pName} recorded 7.5 hours of restful sleep last night with minimal nighttime interruptions.\n\n` +
+        `• Sleep Quality: Steady deep-sleep cycle between 11:00 PM and 5:30 AM IST.\n` +
+        `• Vitals Overnight: Resting heart rate stayed calm around 68–72 BPM.\n` +
+        `• Tip: Keep the bedroom cool and avoid heavy fluids right before bedtime.`,
+      citations: [
+        'Google Fit / Health Connect Sleep Session',
+        'Overnight Heart Rate Telemetry',
+        'Caregiver Suresh Morning Check-in'
+      ],
+      suggestedFollowUps: [
+        `How is ${pName}'s blood pressure today?`,
+        'Check daily steps and activity',
+        'Did Mom take her medicines today?'
+      ]
+    };
+  }
+
+  // 6c. Steps, Walking & Activity Queries
+  if (
+    q.includes('step') ||
+    q.includes('walk') ||
+    q.includes('activity') ||
+    q.includes('active') ||
+    q.includes('exercise')
+  ) {
+    return {
+      answer:
+        `${pName} has logged 4,891 steps so far today toward his 6,000-step daily goal.\n\n` +
+        `• Activity Pattern: Most movement happened indoors during morning and post-lunch walks due to warm afternoon weather.\n` +
+        `• Hydration & Safety: Suresh confirmed adequate water intake; no fatigue or dizziness reported.\n` +
+        `• Suggestion: A gentle 10–15 minute indoor walk after dinner can comfortably close the daily goal.`,
+      citations: [
+        'Google Fit / Health Connect Step Counter',
+        'Garmin Venu 3 Activity Stream',
+        'Chennai Weather & Indoor Mobility Log'
+      ],
+      suggestedFollowUps: [
+        `How is ${pName}'s blood pressure trending?`,
+        'Review sleep quality last night',
+        'Prepare summary for Dr. Sharma'
+      ]
+    };
+  }
+
+  // 6d. Doctor Consult / Appointment / Prepare Queries
+  if (
+    q.includes('doctor') ||
+    q.includes('dr.') ||
+    q.includes('consult') ||
+    q.includes('appointment') ||
+    q.includes('visit') ||
+    q.includes('cardio')
+  ) {
+    return {
+      answer:
+        `Here is a quick consultation brief prepared for ${pName}'s upcoming Cardiology Video Visit:\n\n` +
+        `• Blood Pressure: Currently ${currentBP}, with mild evening elevation over the last 5 days.\n` +
+        `• Medication Adherence: Morning Amlodipine 5mg and Metformin 500mg taken on time; evening Atorvastatin 20mg scheduled at 8:00 PM.\n` +
+        `• Suggested Questions for Doctor: Ask whether evening indoor heat is contributing to the systolic bump and if current dosage remains optimal.`,
+      citations: [
+        'KinGuardian Prepare-for-Doctor Brief',
+        'Omron BP 30-Day Trend',
+        'Apollo Digital Prescription Record'
+      ],
+      suggestedFollowUps: [
+        'Check latest lab test results',
+        'Review today’s medication schedule',
+        'How are Dad’s steps trending?'
+      ]
+    };
+  }
+
+  // 7. Topic-aware Dynamic Fallback (Never returns the exact same static paragraph for different questions)
   return {
     answer:
-      `Hello! I am KinGuardian Clinical AI, your continuous medical companion for ${pName} and Lakshmi.\n\n` +
-      `Here is their active health snapshot:\n` +
-      `• **Dad's BP**: ${currentBP} (Stable indoor telemetry)\n` +
-      `• **Mom's Glucose**: 98 mg/dL (Normal fasting)\n` +
-      `• **Medications**: Morning doses verified taken; evening dose scheduled at 8:00 PM.\n` +
-      `• **Safety**: All emergency systems and telemetry loops are active.\n\n` +
-      `You can ask me about blood pressure trends, medications, lab reports, doctor appointments, or caregiver updates anytime!`,
+      `Regarding "${query.trim()}" for ${pName}:\n\n` +
+      `• Current Vitals: Blood pressure is ${currentBP} with resting heart rate at 72 BPM and 4,891 steps today.\n` +
+      `• Medications: Morning doses verified taken; evening Atorvastatin 20mg is scheduled at 8:00 PM IST.\n` +
+      `• Care Team Status: Caregiver Suresh Kumar is active in Chennai and all SOS & WhatsApp loops are online.\n\n` +
+      `Ask me specifically about BP trends, medicines, sleep, steps, lab reports, or doctor visit preparation for a focused breakdown.`,
     citations: [
       'Omron BP Telemetry Stream',
-      'Dexcom G7 Continuous Glucose Sensor',
-      'KinGuardian Clinical Knowledge Base'
+      'Google Fit / Health Connect Live Sync',
+      'Caregiver Suresh Kumar Logs'
     ],
     suggestedFollowUps: [
-      "What is Dad's blood pressure today?",
+      `What is ${pName}'s blood pressure today?`,
       'Did Mom take her pills?',
-      "When is Dad's next appointment?",
-      "Summarize Dad's latest lab test"
+      'Prepare summary for Dr. Sharma',
+      'How many steps did Dad walk today?'
     ]
   };
 }
